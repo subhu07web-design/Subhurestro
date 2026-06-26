@@ -52,6 +52,9 @@ export default function PhoneShell() {
     { time: new Date().toLocaleTimeString(), msg: "Synced security rules with Cloud Firestore.", type: 'success' }
   ]);
 
+  // View state controls
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
   // Phone state controls
   const [isPhoneAsleep, setIsPhoneAsleep] = useState(false);
   const [phoneTime, setPhoneTime] = useState('');
@@ -148,7 +151,7 @@ export default function PhoneShell() {
         </div>
 
         {/* Dynamic Mode Switcher */}
-        <div className="flex bg-[#12192A] rounded-lg p-0.5 md:p-1 border border-gray-800 max-w-full">
+        <div className="flex bg-[#12192A] rounded-lg p-0.5 md:p-1 border border-gray-800 max-w-full items-center gap-1">
           <button
             onClick={() => {
               setActiveTab('customer');
@@ -159,6 +162,21 @@ export default function PhoneShell() {
             <Smartphone className="w-3 h-3 md:w-3.5 md:h-3.5" />
             <span>📱 Customer App</span>
           </button>
+          
+          {activeTab === 'customer' && (
+            <button
+              onClick={() => {
+                const nextState = !isFullScreen;
+                setIsFullScreen(nextState);
+                handleLogEvent(nextState ? "Switched Customer App to Full Screen Desktop Web View." : "Switched Customer App to Mobile Simulator View.", "info");
+              }}
+              className="px-2 md:px-3 py-1 rounded-md text-[8.5px] md:text-[9.5px] font-extrabold bg-[#1A253A] border border-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-[#0A0D14] transition-all flex items-center gap-1 cursor-pointer"
+              title={isFullScreen ? "Switch to Phone Shell" : "Switch to Full Screen Layout"}
+            >
+              {isFullScreen ? <Smartphone className="w-2.5 h-2.5" /> : <Monitor className="w-2.5 h-2.5" />}
+              <span>{isFullScreen ? "Phone Shell" : "Full Screen"}</span>
+            </button>
+          )}
           
           <button
             onClick={handleTryEnterAdmin}
@@ -184,83 +202,101 @@ export default function PhoneShell() {
           <AnimatePresence mode="wait">
             {activeTab === 'customer' ? (
               
-              // CUSTOMER SMARTPHONE MOCK SHELL
-              <motion.div 
-                key="phone-shell"
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.96 }}
-                className="relative w-full max-w-[350px] h-[640px] md:w-[345px] md:h-[710px] bg-gradient-to-b from-[#1E2538] to-[#0B0F19] rounded-3xl md:rounded-[42px] p-2 md:p-3.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] border-2 md:border-[5.5px] border-[#2A344E] md:ring-[7px] ring-black/40 flex flex-col overflow-hidden group select-none"
-              >
-                {/* Physical Power/Sleep Button */}
-                <button 
-                  onClick={() => {
-                    setIsPhoneAsleep(!isPhoneAsleep);
-                    handleLogEvent(isPhoneAsleep ? "Woke mobile screen up." : "Placed mobile screen in energy sleep.", "info");
-                  }}
-                  className="hidden md:block absolute top-28 -right-[6px] w-[2px] h-10 bg-[#3F4D74] rounded-l border border-black/30 active:translate-x-[-1px] transition-all z-[999]"
-                  title="Mock Power / Sleep"
-                />
+              isFullScreen ? (
+                // FULL SCREEN CUSTOMER DESKTOP VIEW
+                <motion.div 
+                  key="customer-desktop-full"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 15 }}
+                  className="w-full max-w-5xl h-[620px] md:h-[710px] bg-[#0E1322] rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] border border-gray-800/60 flex flex-col"
+                >
+                  <CustomerApp 
+                    settings={settings} 
+                    onLogEvent={handleLogEvent} 
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                  />
+                </motion.div>
+              ) : (
+                // CUSTOMER SMARTPHONE MOCK SHELL
+                <motion.div 
+                  key="phone-shell"
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  className="relative w-full max-w-[350px] h-[640px] md:w-[345px] md:h-[710px] bg-gradient-to-b from-[#1E2538] to-[#0B0F19] rounded-3xl md:rounded-[42px] p-2 md:p-3.5 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] border-2 md:border-[5.5px] border-[#2A344E] md:ring-[7px] ring-black/40 flex flex-col overflow-hidden group select-none"
+                >
+                  {/* Physical Power/Sleep Button */}
+                  <button 
+                    onClick={() => {
+                      setIsPhoneAsleep(!isPhoneAsleep);
+                      handleLogEvent(isPhoneAsleep ? "Woke mobile screen up." : "Placed mobile screen in energy sleep.", "info");
+                    }}
+                    className="hidden md:block absolute top-28 -right-[6px] w-[2px] h-10 bg-[#3F4D74] rounded-l border border-black/30 active:translate-x-[-1px] transition-all z-[999]"
+                    title="Mock Power / Sleep"
+                  />
 
-                {/* Physical Volume Keys */}
-                <button 
-                  onClick={() => handleLogEvent("Simulated volume toggle up.", "info")}
-                  className="hidden md:block absolute top-24 -left-[6px] w-[2px] h-8 bg-[#3F4D74] rounded-r border border-black/30 z-[999]"
-                />
-                <button 
-                  onClick={() => handleLogEvent("Simulated volume toggle down.", "info")}
-                  className="hidden md:block absolute top-34 -left-[6px] w-[2px] h-8 bg-[#3F4D74] rounded-r border border-black/30 z-[999]"
-                />
+                  {/* Physical Volume Keys */}
+                  <button 
+                    onClick={() => handleLogEvent("Simulated volume toggle up.", "info")}
+                    className="hidden md:block absolute top-24 -left-[6px] w-[2px] h-8 bg-[#3F4D74] rounded-r border border-black/30 z-[999]"
+                  />
+                  <button 
+                    onClick={() => handleLogEvent("Simulated volume toggle down.", "info")}
+                    className="hidden md:block absolute top-34 -left-[6px] w-[2px] h-8 bg-[#3F4D74] rounded-r border border-black/30 z-[999]"
+                  />
 
-                {/* Smartphone Screen Border Glow */}
-                <div className="hidden md:block absolute inset-0 rounded-[35px] border border-white/5 pointer-events-none z-50 shadow-[inset_0_0_12px_rgba(255,255,255,0.03)]" />
+                  {/* Smartphone Screen Border Glow */}
+                  <div className="hidden md:block absolute inset-0 rounded-[35px] border border-white/5 pointer-events-none z-50 shadow-[inset_0_0_12px_rgba(255,255,255,0.03)]" />
 
-                {/* Top Camera Notch */}
-                <div className="hidden md:flex absolute top-0 left-1/2 transform -translate-x-1/2 w-28 h-5.5 bg-black rounded-b-2xl z-50 items-center justify-center gap-1.5 px-3">
-                  <div className="w-2.5 h-2.5 bg-gray-900 rounded-full border border-gray-800/80 shrink-0 flex items-center justify-center shadow-inner">
-                    <div className="w-1 h-1 bg-blue-900/40 rounded-full" />
-                  </div>
-                  <div className="w-10 h-1 bg-gray-800/80 rounded-full shrink-0" />
-                </div>
-
-                {/* Smartphone Status Bar */}
-                <div className="hidden md:flex h-6.5 bg-[#0E131F]/90 border-b border-gray-800/20 px-5 items-center justify-between text-[9.5px] font-bold text-gray-400 select-none z-50 shrink-0 pt-0.5">
-                  <span>{phoneTime}</span>
-                  <div className="flex items-center gap-1.5">
-                    <Wifi className="w-3 h-3 text-gray-400" />
-                    <span className="text-[8px] font-bold text-gray-500">5G</span>
-                    <Battery className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500/10" />
-                    <span className="text-[8.5px]">96%</span>
-                  </div>
-                </div>
-
-                {/* Interactive Phone Screen Window */}
-                <div className="flex-1 rounded-2xl md:rounded-b-[24px] overflow-hidden relative bg-[#0A0D14]">
-                  
-                  {isPhoneAsleep ? (
-                    // Asleep State Screen
-                    <div className="absolute inset-0 bg-black z-[1000] flex flex-col items-center justify-center space-y-2">
-                      <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Energy Sleep Active</span>
-                      <p className="text-[9px] text-gray-700">Click rightmost edge physical button to wake screen</p>
+                  {/* Top Camera Notch */}
+                  <div className="hidden md:flex absolute top-0 left-1/2 transform -translate-x-1/2 w-28 h-5.5 bg-black rounded-b-2xl z-50 items-center justify-center gap-1.5 px-3">
+                    <div className="w-2.5 h-2.5 bg-gray-900 rounded-full border border-gray-800/80 shrink-0 flex items-center justify-center shadow-inner">
+                      <div className="w-1 h-1 bg-blue-900/40 rounded-full" />
                     </div>
-                  ) : (
-                    // Real active Customer App
-                    <CustomerApp 
-                      settings={settings} 
-                      onLogEvent={handleLogEvent} 
-                      activeTab={activeTab}
-                      setActiveTab={setActiveTab}
-                    />
-                  )}
+                    <div className="w-10 h-1 bg-gray-800/80 rounded-full shrink-0" />
+                  </div>
 
-                </div>
+                  {/* Smartphone Status Bar */}
+                  <div className="hidden md:flex h-6.5 bg-[#0E131F]/90 border-b border-gray-800/20 px-5 items-center justify-between text-[9.5px] font-bold text-gray-400 select-none z-50 shrink-0 pt-0.5">
+                    <span>{phoneTime}</span>
+                    <div className="flex items-center gap-1.5">
+                      <Wifi className="w-3 h-3 text-gray-400" />
+                      <span className="text-[8px] font-bold text-gray-500">5G</span>
+                      <Battery className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500/10" />
+                      <span className="text-[8.5px]">96%</span>
+                    </div>
+                  </div>
 
-                {/* bottom swipe pill mock */}
-                <div className="hidden md:flex h-4 items-center justify-center pt-1 shrink-0 z-50">
-                  <div className="w-24 h-1 bg-gray-700/80 rounded-full" />
-                </div>
+                  {/* Interactive Phone Screen Window */}
+                  <div className="flex-1 rounded-2xl md:rounded-b-[24px] overflow-hidden relative bg-[#0A0D14]">
+                    
+                    {isPhoneAsleep ? (
+                      // Asleep State Screen
+                      <div className="absolute inset-0 bg-black z-[1000] flex flex-col items-center justify-center space-y-2">
+                        <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Energy Sleep Active</span>
+                        <p className="text-[9px] text-gray-700">Click rightmost edge physical button to wake screen</p>
+                      </div>
+                    ) : (
+                      // Real active Customer App
+                      <CustomerApp 
+                        settings={settings} 
+                        onLogEvent={handleLogEvent} 
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                      />
+                    )}
 
-              </motion.div>
+                  </div>
+
+                  {/* bottom swipe pill mock */}
+                  <div className="hidden md:flex h-4 items-center justify-center pt-1 shrink-0 z-50">
+                    <div className="w-24 h-1 bg-gray-700/80 rounded-full" />
+                  </div>
+
+                </motion.div>
+              )
             ) : (
               
               // OWNER DESKTOP POS/ADMIN VIEW

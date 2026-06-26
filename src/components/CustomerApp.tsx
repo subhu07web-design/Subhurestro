@@ -425,12 +425,6 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
 
   // Submit Food Order
   const handlePlaceOrder = async () => {
-    if (!user) {
-      setAuthMode('login');
-      setIsAuthModalOpen(true);
-      onLogEvent("Please authorize your profile before ordering.", "warning");
-      return;
-    }
     if (!checkoutName || !checkoutPhone || !checkoutAddress) {
       onLogEvent("Please complete your delivery credentials.", "warning");
       return;
@@ -450,10 +444,10 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
 
       const newOrder: Order = {
         id: orderId,
-        userId: user.uid,
+        userId: user ? user.uid : "guest_" + Math.floor(100000 + Math.random() * 900000),
         userName: checkoutName,
         userPhone: checkoutPhone,
-        userEmail: checkoutEmail,
+        userEmail: checkoutEmail || (user ? user.email || "" : "guest@subhurestro.com"),
         items: itemsSummary,
         promoCode: appliedCoupon?.code,
         discount: discountAmount,
@@ -494,12 +488,6 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
   };
 
   const handleInitiatePayment = () => {
-    if (!user) {
-      setAuthMode('login');
-      setIsAuthModalOpen(true);
-      onLogEvent("Please authorize your profile before ordering.", "warning");
-      return;
-    }
     if (!checkoutName || !checkoutPhone || !checkoutAddress) {
       onLogEvent("Please complete your delivery credentials.", "warning");
       return;
@@ -1283,17 +1271,11 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
                     {/* CHECKOUT BUTTON */}
                     <button 
                       onClick={() => {
-                        if (!user) {
-                          setAuthMode('login');
-                          setIsAuthModalOpen(true);
-                          onLogEvent("Please authorize your profile before checkout.", "warning");
-                        } else {
-                          setIsCheckoutMode(true);
-                        }
+                        setIsCheckoutMode(true);
                       }}
-                      className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-[#0A0D14] font-bold text-xs rounded-lg text-center shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-[#0A0D14] font-bold text-xs rounded-lg text-center shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <span>Proceed to Credentials Checkout</span>
+                      <span>Order Now (Enter Delivery Details)</span>
                       <ChevronRight className="w-4 h-4 stroke-[3]" />
                     </button>
                   </div>
@@ -1302,6 +1284,13 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
             ) : (
               // DELIVERY CHECKOUT DETAILS SCREEN
               <div className="space-y-3.5">
+                {!user && (
+                  <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center">
+                    <p className="text-[10px] text-amber-500 font-bold">
+                      💡 Ordering as Guest. <button onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }} className="underline hover:text-amber-400 cursor-pointer font-extrabold">Sign In / Create Account</button> to view order history later!
+                    </p>
+                  </div>
+                )}
                 <div className="p-4 bg-[#0E1322] border border-gray-800 rounded-xl space-y-3 text-xs">
                   <div className="space-y-1">
                     <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Recipient Name</label>
@@ -1556,98 +1545,237 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="space-y-4"
+            className="space-y-4 animate-fade-in"
           >
-            {/* User details card */}
-            <div className="p-4 bg-[#0E1322] border border-gray-800 rounded-xl relative overflow-hidden flex items-center gap-3">
-              <img 
-                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=80&h=80" 
-                className="w-12 h-12 rounded-full border border-amber-500/30 object-cover" 
-                alt="Profile"
-              />
-              <div className="flex-1">
-                <h3 className="text-sm font-bold text-white">{profile?.name || "Premium Patron"}</h3>
-                <p className="text-[9px] text-gray-400">{profile?.email}</p>
-                <div className="flex gap-1.5 mt-1">
-                  <span className="text-[8px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/10 font-bold uppercase tracking-wide">
-                    {profile?.role || "Patron"}
-                  </span>
-                  {profile?.role === 'admin' && (
-                    <button 
-                      onClick={() => setActiveTab('admin')}
-                      className="text-[8px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/10 font-black uppercase hover:bg-emerald-500/20 transition-all"
+            {!user ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-[#0E1322] border border-gray-800 rounded-xl text-center space-y-2">
+                  <User className="w-8 h-8 text-amber-500 mx-auto" />
+                  <h3 className="text-sm font-serif font-bold text-white">Guest Vault</h3>
+                  <p className="text-[10px] text-gray-400 leading-normal max-w-[280px] mx-auto">
+                    Sign in or create an account to securely save your details, track live kitchen status, and view your complete ordering history.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-[#0D1220] border border-gray-800 rounded-xl space-y-4">
+                  <div className="flex border-b border-gray-800">
+                    <button
+                      onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                      className={`flex-1 pb-2 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${authMode === 'login' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-gray-500 hover:text-gray-300'}`}
                     >
-                      Enter Admin Center
+                      Login
                     </button>
+                    <button
+                      onClick={() => { setAuthMode('signup'); setAuthError(''); }}
+                      className={`flex-1 pb-2 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${authMode === 'signup' ? 'text-amber-500 border-b-2 border-amber-500' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                      Create Account
+                    </button>
+                  </div>
+
+                  {authError && (
+                    <div className="p-2 bg-rose-500/10 border border-rose-500/20 rounded-lg flex items-center gap-2 text-[9px] text-rose-400">
+                      <ShieldAlert className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      <span className="line-clamp-2">{authError}</span>
+                    </div>
                   )}
-                </div>
-              </div>
-              <button 
-                onClick={handleSignOut}
-                className="p-1.5 rounded-lg bg-gray-900 text-gray-500 hover:text-rose-500"
-                title="Sign Out"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
 
-            {/* Address log card */}
-            <div className="p-3.5 bg-[#0E1322] border border-gray-800 rounded-xl space-y-2 text-xs">
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Saved coordinates</span>
-              <div className="flex gap-2 items-start mt-1 text-gray-300 text-[11px] leading-relaxed">
-                <MapPin className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-white">Default Residence</p>
-                  <p className="text-gray-400 text-[10px]">{profile?.address || "No delivery address logged yet. Checkout first!"}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* PREVIOUS ORDERS SECTION */}
-            <div className="space-y-2.5">
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Historical Order logs</span>
-              
-              <div className="space-y-2.5">
-                {orders.map(ord => (
-                  <div key={ord.id} className="p-3 rounded-xl bg-[#0C101B] border border-gray-800 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="text-[10px] font-bold text-white">#{ord.id.substring(4)}</span>
-                        <p className="text-[8px] text-gray-500">{new Date(ord.createdAt).toLocaleDateString()}</p>
+                  <form onSubmit={handleEmailAuth} className="space-y-3">
+                    {authMode === 'signup' && (
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Full Name</label>
+                        <input 
+                          type="text" 
+                          required
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder="e.g. Alexander Mercer"
+                          className="w-full p-2 bg-gray-950 border border-gray-850 rounded-lg text-xs text-white focus:outline-none focus:border-amber-500/30"
+                        />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[8px] font-bold uppercase px-2 py-0.5 rounded ${ord.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400' : ord.status === 'cancelled' ? 'bg-rose-500/15 text-rose-400' : 'bg-amber-500/15 text-amber-400'}`}>
-                          {ord.status}
-                        </span>
+                    )}
+
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Email Address</label>
+                      <input 
+                        type="email" 
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="e.g. patron@subhurestro.com"
+                        className="w-full p-2 bg-gray-950 border border-gray-850 rounded-lg text-xs text-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Password</label>
+                      <input 
+                        type="password" 
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="At least 6 characters"
+                        className="w-full p-2 bg-gray-950 border border-gray-850 rounded-lg text-xs text-white focus:outline-none"
+                      />
+                    </div>
+
+                    {authMode === 'signup' && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Phone</label>
+                          <input 
+                            type="tel" 
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="e.g. 9876543210"
+                            className="w-full p-2 bg-gray-950 border border-gray-850 rounded-lg text-[10px] text-white focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Address</label>
+                          <input 
+                            type="text" 
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)}
+                            placeholder="Street, City..."
+                            className="w-full p-2 bg-gray-950 border border-gray-850 rounded-lg text-[10px] text-white focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <button 
+                      type="submit" 
+                      disabled={authLoading}
+                      className="w-full py-2 bg-gradient-to-r from-amber-500 to-yellow-600 text-[#0A0D14] font-bold text-xs rounded-lg shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      {authLoading ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <span>{authMode === 'login' ? 'Authorize Vault' : 'Register Profile'}</span>
+                      )}
+                    </button>
+                  </form>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-800 text-[9px] text-gray-400">
+                    <button 
+                      onClick={handleGoogleLogin} 
+                      className="text-gray-300 hover:text-white flex items-center gap-1 cursor-pointer font-bold"
+                    >
+                      Sign In with Google
+                    </button>
+                    {authMode === 'login' ? (
+                      <button 
+                        onClick={() => { setAuthMode('signup'); setAuthError(''); }}
+                        className="text-amber-500 hover:underline font-bold cursor-pointer"
+                      >
+                        Create Account
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                        className="text-amber-500 hover:underline font-bold cursor-pointer"
+                      >
+                        Back to Login
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* User details card */}
+                <div className="p-4 bg-[#0E1322] border border-gray-800 rounded-xl relative overflow-hidden flex items-center gap-3">
+                  <img 
+                    src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=80&h=80" 
+                    className="w-12 h-12 rounded-full border border-amber-500/30 object-cover" 
+                    alt="Profile"
+                  />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-bold text-white">{profile?.name || "Premium Patron"}</h3>
+                    <p className="text-[9px] text-gray-400">{profile?.email}</p>
+                    <div className="flex gap-1.5 mt-1">
+                      <span className="text-[8px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/10 font-bold uppercase tracking-wide">
+                        {profile?.role || "Patron"}
+                      </span>
+                      {profile?.role === 'admin' && (
                         <button 
-                          onClick={() => {
-                            setActiveTrackingOrderId(ord.id);
-                            setCurrentScreen('tracking');
-                          }}
-                          className="p-1 rounded bg-gray-900 text-gray-400 hover:text-white"
+                          onClick={() => setActiveTab('admin')}
+                          className="text-[8px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/10 font-black uppercase hover:bg-emerald-500/20 transition-all"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          Enter Admin Center
                         </button>
+                      )}
+                    </div>
+                  </div>
+                  <button 
+                    onClick={handleSignOut}
+                    className="p-1.5 rounded-lg bg-gray-900 text-gray-500 hover:text-rose-500 cursor-pointer"
+                    title="Sign Out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Address log card */}
+                <div className="p-3.5 bg-[#0E1322] border border-gray-800 rounded-xl space-y-2 text-xs">
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Saved coordinates</span>
+                  <div className="flex gap-2 items-start mt-1 text-gray-300 text-[11px] leading-relaxed">
+                    <MapPin className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-white">Default Residence</p>
+                      <p className="text-gray-400 text-[10px]">{profile?.address || "No delivery address logged yet. Checkout first!"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PREVIOUS ORDERS SECTION */}
+                <div className="space-y-2.5">
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Historical Order logs</span>
+                  
+                  <div className="space-y-2.5">
+                    {orders.map(ord => (
+                      <div key={ord.id} className="p-3 rounded-xl bg-[#0C101B] border border-gray-800 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="text-[10px] font-bold text-white">#{ord.id.substring(4)}</span>
+                            <p className="text-[8px] text-gray-500">{new Date(ord.createdAt).toLocaleDateString()}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[8px] font-bold uppercase px-2 py-0.5 rounded ${ord.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400' : ord.status === 'cancelled' ? 'bg-rose-500/15 text-rose-400' : 'bg-amber-500/15 text-amber-400'}`}>
+                              {ord.status}
+                            </span>
+                            <button 
+                              onClick={() => {
+                                setActiveTrackingOrderId(ord.id);
+                                setCurrentScreen('tracking');
+                              }}
+                              className="p-1 rounded bg-gray-900 text-gray-400 hover:text-white cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-[10px] text-gray-400 line-clamp-1">
+                          {ord.items.map(it => `${it.name} x${it.quantity}`).join(', ')}
+                        </p>
+                        <div className="flex justify-between items-center pt-1.5 border-t border-gray-800/40 text-[10px]">
+                          <span className="font-bold text-amber-500">₹{ord.total}</span>
+                          <span className="text-[8px] text-gray-500 capitalize">{ord.paymentMethod} Payment</span>
+                        </div>
                       </div>
-                    </div>
+                    ))}
 
-                    <p className="text-[10px] text-gray-400 line-clamp-1">
-                      {ord.items.map(it => `${it.name} x${it.quantity}`).join(', ')}
-                    </p>
-                    <div className="flex justify-between items-center pt-1.5 border-t border-gray-800/40 text-[10px]">
-                      <span className="font-bold text-amber-500">₹{ord.total}</span>
-                      <span className="text-[8px] text-gray-500 capitalize">{ord.paymentMethod} Payment</span>
-                    </div>
+                    {orders.length === 0 && (
+                      <div className="py-10 text-center space-y-1">
+                        <p className="text-xs text-gray-500">Your order vaults are blank.</p>
+                      </div>
+                    )}
                   </div>
-                ))}
-
-                {orders.length === 0 && (
-                  <div className="py-10 text-center space-y-1">
-                    <p className="text-xs text-gray-500">Your order vaults are blank.</p>
-                  </div>
-                )}
-              </div>
-            </div>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
 
