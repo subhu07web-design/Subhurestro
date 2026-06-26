@@ -1,0 +1,6 @@
+{
+  "name": "Subhu Restro",
+  "description": "An elite premium restaurant POS and mobile food ordering app built with real-time Firebase syncing, table reservations, interactive search, custom add-ons, and sales dashboard analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

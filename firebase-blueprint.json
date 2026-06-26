@@ -1,0 +1,143 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document containing authentication and personal contact details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "role": { "type": "string", "enum": ["customer", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "role"]
+    },
+    "Food": {
+      "title": "Food",
+      "description": "Food menu item listing details, variants, and pricing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "discountPrice": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "isVeg": { "type": "boolean" },
+        "isBestseller": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "prepTime": { "type": "number" },
+        "category": { "type": "string" },
+        "isAvailable": { "type": "boolean" },
+        "variants": { "type": "array" },
+        "addOns": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "price", "category", "isAvailable"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer food order with item breakdown, totals, tracking status, and payment details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhone": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "items": { "type": "array" },
+        "promoCode": { "type": "string" },
+        "discount": { "type": "number" },
+        "tax": { "type": "number" },
+        "packingCharge": { "type": "number" },
+        "deliveryCharge": { "type": "number" },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["received", "preparing", "ready", "completed", "cancelled"] },
+        "paymentMethod": { "type": "string", "enum": ["cod", "upi", "razorpay"] },
+        "address": { "type": "string" },
+        "specialInstructions": { "type": "string" },
+        "estimatedTime": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "items", "total", "status", "paymentMethod", "createdAt"]
+    },
+    "Reservation": {
+      "title": "Reservation",
+      "description": "Table reservation request containing contact and party details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "guests": { "type": "number" },
+        "specialRequest": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "phone", "date", "time", "guests", "status", "createdAt"]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "Promo coupon for applying cart discounts",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "discountPercent": { "type": "number" },
+        "flatDiscount": { "type": "number" },
+        "label": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["code", "isActive"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "General restaurant system metadata and billing configs",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "phone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string" },
+        "openingHours": { "type": "string" },
+        "closingHours": { "type": "string" },
+        "deliveryCharges": { "type": "number" },
+        "gstPercent": { "type": "number" },
+        "upiId": { "type": "string" },
+        "logoUrl": { "type": "string" }
+      },
+      "required": ["name", "phone", "whatsapp", "openingHours", "closingHours", "deliveryCharges", "gstPercent"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "foods/{foodId}": {
+      "schema": { "$ref": "#/entities/Food" },
+      "description": "Food menu items"
+    },
+    "orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Customer orders"
+    },
+    "reservations/{reservationId}": {
+      "schema": { "$ref": "#/entities/Reservation" },
+      "description": "Table reservations"
+    },
+    "coupons/{couponId}": {
+      "schema": { "$ref": "#/entities/Coupon" },
+      "description": "Discount coupons"
+    },
+    "settings/{settingsId}": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "Global restaurant settings"
+    }
+  }
+}
