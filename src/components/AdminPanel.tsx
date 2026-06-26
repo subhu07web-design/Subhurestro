@@ -349,7 +349,7 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
   }, [orders]);
 
   return (
-    <div className="flex h-full bg-[#080B11] text-gray-300 font-sans select-none overflow-hidden">
+    <div className="flex flex-col md:flex-row h-full bg-[#080B11] text-gray-300 font-sans select-none overflow-hidden">
       
       {/* Real-time Order Popup Banner */}
       <AnimatePresence>
@@ -386,17 +386,17 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
       </AnimatePresence>
 
       {/* DASHBOARD LEFTSIDE BAR */}
-      <aside className="w-52 border-r border-gray-800 bg-[#0A0D14]/95 flex flex-col justify-between shrink-0 select-none">
-        <div>
-          <div className="p-4 border-b border-gray-800 flex items-center gap-2">
-            <div className="w-7 h-7 bg-amber-500 text-black font-serif font-bold rounded-md flex items-center justify-center text-sm shadow">Ω</div>
+      <aside className="w-full md:w-52 border-b md:border-b-0 md:border-r border-gray-800 bg-[#0A0D14]/95 flex flex-col md:flex-col justify-between shrink-0 select-none">
+        <div className="flex flex-row md:flex-col items-center md:items-stretch justify-between md:justify-start w-full overflow-x-auto md:overflow-x-visible custom-scrollbar">
+          <div className="p-3 md:p-4 border-r md:border-r-0 md:border-b border-gray-800 flex items-center gap-2 shrink-0">
+            <div className="w-6 h-6 md:w-7 md:h-7 bg-amber-500 text-black font-serif font-bold rounded-md flex items-center justify-center text-xs md:text-sm shadow">Ω</div>
             <div>
-              <h2 className="text-xs font-serif font-black text-white leading-none">POS Control</h2>
-              <p className="text-[8px] text-gray-500 mt-0.5 tracking-wider uppercase font-bold">Subhu Restro</p>
+              <h2 className="text-[10px] md:text-xs font-serif font-black text-white leading-none">POS Control</h2>
+              <p className="text-[7px] md:text-[8px] text-gray-500 mt-0.5 tracking-wider uppercase font-bold">Subhu Restro</p>
             </div>
           </div>
 
-          <nav className="p-2.5 space-y-1">
+          <nav className="p-1.5 md:p-2.5 flex flex-row md:flex-col gap-1 md:space-y-1 overflow-x-auto md:overflow-x-visible shrink-0 flex-1">
             {[
               { key: 'orders', icon: ShoppingBag, label: 'Live Orders', count: stats.pendingCount },
               { key: 'reservations', icon: Calendar, label: 'Reservations', count: stats.reservationCount },
@@ -411,14 +411,14 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
                 <button
                   key={item.key}
                   onClick={() => setActiveTab(item.key as any)}
-                  className={`w-full p-2 rounded-lg text-[10.5px] font-bold flex items-center justify-between transition-all ${isSel ? 'bg-amber-500/10 text-amber-500 border-l-2 border-amber-500' : 'text-gray-400 hover:text-gray-200'}`}
+                  className={`p-1.5 md:p-2 rounded-lg text-[9.5px] md:text-[10.5px] font-bold flex items-center justify-between gap-2 transition-all shrink-0 ${isSel ? 'bg-amber-500/10 text-amber-500 border-b-2 md:border-b-0 md:border-l-2 border-amber-500' : 'text-gray-400 hover:text-gray-200'}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
+                  <div className="flex items-center gap-1.5 md:gap-2">
+                    <Icon className="w-3.5 h-3.5" />
+                    <span className="whitespace-nowrap">{item.label}</span>
                   </div>
                   {item.count !== undefined && item.count > 0 && (
-                    <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-[#0A0D14] text-[8px] font-black leading-none">{item.count}</span>
+                    <span className="px-1 md:px-1.5 py-0.5 rounded-full bg-amber-500 text-[#0A0D14] text-[7.5px] md:text-[8px] font-black leading-none">{item.count}</span>
                   )}
                 </button>
               );
@@ -426,7 +426,7 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
           </nav>
         </div>
 
-        <div className="p-3 border-t border-gray-800 bg-black/10 text-center">
+        <div className="hidden md:block p-3 border-t border-gray-800 bg-black/10 text-center">
           <p className="text-[9px] text-gray-600 font-bold uppercase tracking-wider">Secure Cloud POS</p>
           <p className="text-[8px] text-emerald-500 mt-0.5">● Connected Live</p>
         </div>
@@ -436,13 +436,13 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
       <main className="flex-1 flex flex-col overflow-hidden relative">
         
         {/* HEADER */}
-        <header className="px-5 py-3 border-b border-gray-800 bg-[#0A0D14] flex items-center justify-between shrink-0">
+        <header className="px-5 py-3 border-b border-gray-800 bg-[#0A0D14] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 shrink-0">
           <div>
-            <h1 className="text-sm font-serif font-bold text-white tracking-wide capitalize">Bistro Administration: {activeTab} Panel</h1>
-            <p className="text-[9px] text-gray-500 mt-0.5">Real-time data synced automatically with Firebase cloud</p>
+            <h1 className="text-xs sm:text-sm font-serif font-bold text-white tracking-wide capitalize">Bistro Administration: {activeTab} Panel</h1>
+            <p className="text-[8px] sm:text-[9px] text-gray-500 mt-0.5">Real-time data synced automatically with Firebase cloud</p>
           </div>
 
-          <div className="flex gap-4 select-none">
+          <div className="flex gap-4 select-none w-full sm:w-auto justify-between sm:justify-end border-t border-gray-800/60 pt-2 sm:pt-0 sm:border-t-0">
             <div className="flex items-center gap-2 border-r border-gray-800 pr-4">
               <DollarSign className="w-4 h-4 text-amber-500 shrink-0" />
               <div>
@@ -472,7 +472,7 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
                 <div className="text-[9px] text-gray-500">Sorted by Newest First</div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {orders.map(order => (
                   <div 
                     key={order.id} 
@@ -513,10 +513,10 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
                       <div className="pt-2.5 text-[10px] space-y-1">
                         <p className="text-gray-400 flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                          <span>Delivery: {order.address}</span>
+                          <span className="break-all">Delivery: {order.address}</span>
                         </p>
                         {order.specialInstructions && (
-                          <p className="text-amber-500 bg-amber-500/5 px-2 py-1 rounded border border-amber-500/10 italic text-[9px]">
+                          <p className="text-amber-500 bg-amber-500/5 px-2 py-1 rounded border border-amber-500/10 italic text-[9px] break-all">
                             "Note: {order.specialInstructions}"
                           </p>
                         )}
@@ -571,7 +571,7 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
                 ))}
 
                 {orders.length === 0 && (
-                  <div className="col-span-2 py-20 text-center space-y-2">
+                  <div className="col-span-1 sm:col-span-2 py-20 text-center space-y-2">
                     <p className="text-xs text-gray-500">No client orders registered inside Firestore yet.</p>
                   </div>
                 )}
@@ -584,8 +584,8 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
             <div className="space-y-4">
               <h3 className="text-xs font-serif font-bold text-white tracking-widest uppercase">Table Bookings & VIP Requests</h3>
 
-              <div className="bg-[#0E1322] border border-gray-800 rounded-xl overflow-hidden">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="bg-[#0E1322] border border-gray-800 rounded-xl overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse text-xs min-w-[600px]">
                   <thead>
                     <tr className="border-b border-gray-800 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
                       <th className="p-3">Reservation Code</th>
@@ -671,8 +671,8 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
               </div>
 
               {/* Food Inventory Table */}
-              <div className="bg-[#0E1322] border border-gray-800 rounded-xl overflow-hidden">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="bg-[#0E1322] border border-gray-800 rounded-xl overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse text-xs min-w-[600px]">
                   <thead>
                     <tr className="border-b border-gray-800 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
                       <th className="p-3">Dish Spec</th>
@@ -737,7 +737,7 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
             <div className="space-y-4">
               <h3 className="text-xs font-serif font-bold text-white tracking-widest uppercase">Promotions and VIP Coupons</h3>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Coupon Generator */}
                 <form onSubmit={handleAddCoupon} className="p-4 bg-[#0E1322] border border-gray-800 rounded-xl space-y-3 text-xs col-span-1">
                   <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider block">Deploy New Coupon</span>
@@ -809,10 +809,10 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
                 </form>
 
                 {/* Coupons Inventory */}
-                <div className="col-span-2 space-y-3">
+                <div className="col-span-1 md:col-span-2 space-y-3">
                   <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Active Promo Codes</span>
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {coupons.map(coupon => (
                       <div key={coupon.code} className="p-3.5 bg-[#0E1322] border border-gray-800 rounded-xl relative overflow-hidden flex justify-between items-center">
                         <div>
@@ -839,8 +839,8 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
             <div className="space-y-4">
               <h3 className="text-xs font-serif font-bold text-white tracking-widest uppercase">Patrons Directory & Spend Stats</h3>
 
-              <div className="bg-[#0E1322] border border-gray-800 rounded-xl overflow-hidden">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="bg-[#0E1322] border border-gray-800 rounded-xl overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse text-xs min-w-[500px]">
                   <thead>
                     <tr className="border-b border-gray-800 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
                       <th className="p-3">Client details</th>
@@ -886,7 +886,7 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Bistro Brand Name</label>
                   <input 
@@ -918,7 +918,7 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Support Email</label>
                   <input 
@@ -950,7 +950,7 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Address coordinates</label>
                   <input 
@@ -972,7 +972,7 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Opening Time</label>
                   <input 
@@ -1013,7 +1013,7 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
                   />
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 col-span-2 md:col-span-4">
                   <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Secret Owner PIN</label>
                   <input 
                     type="text" 

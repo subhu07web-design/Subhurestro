@@ -98,7 +98,10 @@ export default function PhoneShell() {
       setCurrentUser(user);
       if (user && user.email === 'daskajaldas780@gmail.com') {
         setIsAdminVerified(true);
+        localStorage.setItem('isAdminSession', 'true');
         handleLogEvent(`Authenticated as Owner (${user.email}). Access granted.`, "success");
+      } else if (!user) {
+        localStorage.removeItem('isAdminSession');
       }
     });
     return () => unsubscribe();
@@ -109,6 +112,7 @@ export default function PhoneShell() {
     // Automatically authorize if logged-in user is daskajaldas780@gmail.com
     if (isAdminVerified || (currentUser && currentUser.email === 'daskajaldas780@gmail.com')) {
       setActiveTab('admin');
+      localStorage.setItem('isAdminSession', 'true');
       handleLogEvent("Entered POS Back-Office Admin Dashboard.", "info");
     } else {
       setPinInput('');
@@ -122,6 +126,7 @@ export default function PhoneShell() {
     const correctPIN = settings.adminPIN || "7809";
     if (pinInput === correctPIN || pinInput === "7809" || pinInput === "2026") {
       setIsAdminVerified(true);
+      localStorage.setItem('isAdminSession', 'true');
       setIsPinModalOpen(false);
       setActiveTab('admin');
       handleLogEvent("Back-office unlocked via administrative PIN.", "success");
@@ -209,7 +214,7 @@ export default function PhoneShell() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 15 }}
-                  className="w-full max-w-5xl h-[620px] md:h-[710px] bg-[#0E1322] rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] border border-gray-800/60 flex flex-col"
+                  className="w-full max-w-5xl h-[calc(100vh-100px)] min-h-[500px] md:h-[710px] bg-[#0E1322] rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] border border-gray-800/60 flex flex-col"
                 >
                   <CustomerApp 
                     settings={settings} 
@@ -305,7 +310,7 @@ export default function PhoneShell() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 15 }}
-                className="w-full max-w-5xl h-[620px] md:h-[710px] bg-[#0E1322] rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] border border-gray-800/60 flex flex-col"
+                className="w-full max-w-5xl h-[calc(100vh-100px)] min-h-[500px] md:h-[710px] bg-[#0E1322] rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] border border-gray-800/60 flex flex-col"
               >
                 <AdminPanel 
                   settings={settings} 

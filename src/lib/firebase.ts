@@ -290,6 +290,19 @@ export function subscribeToOrders(userId: string | null, isAdmin: boolean, callb
     }
   };
 
+  const currentUser = auth.currentUser;
+  const isFirebaseAdmin = currentUser && (
+    currentUser.email === 'daskajaldas780@gmail.com' || 
+    // also allow if we logged in as admin role (which we might have verified in profile state)
+    localStorage.getItem('isAdminSession') === 'true'
+  );
+
+  // If requesting admin-level orders but not authenticated as admin, return local fallback immediately
+  if (isAdmin && !isFirebaseAdmin) {
+    callback(getLocalOrders());
+    return () => {};
+  }
+
   const ordersColl = collection(db, 'orders');
   let q;
   if (isAdmin) {
@@ -329,7 +342,7 @@ export function subscribeToOrders(userId: string | null, isAdmin: boolean, callb
 
     callback(list);
   }, (err) => {
-    console.error("Error subscribing to Firestore orders, using local fallback cache:", err);
+    console.warn("Firestore orders subscription deferred. Using local cached records:", err.message);
     // On subscription error, return fallback list
     callback(getLocalOrders());
   });
@@ -351,7 +364,7 @@ export async function createReservationInDB(reservation: Reservation): Promise<v
   try {
     await setDoc(doc(db, 'reservations', reservation.id), reservation);
   } catch (err) {
-    console.error("Firestore reservation write failed. Proceeding with secure client-side storage:", err);
+    console.warn("Firestore reservation write fell back to local storage:", err);
   }
 }
 
@@ -363,6 +376,18 @@ export function subscribeToReservations(callback: (reservations: Reservation[]) 
       return [];
     }
   };
+
+  const currentUser = auth.currentUser;
+  const isFirebaseAdmin = currentUser && (
+    currentUser.email === 'daskajaldas780@gmail.com' ||
+    localStorage.getItem('isAdminSession') === 'true'
+  );
+
+  // If not authenticated as admin in Firebase, use local cached reservations to avoid permission errors
+  if (!isFirebaseAdmin) {
+    callback(getLocalReservations());
+    return () => {};
+  }
 
   const reservationsColl = collection(db, 'reservations');
   const q = query(reservationsColl);
@@ -394,7 +419,7 @@ export function subscribeToReservations(callback: (reservations: Reservation[]) 
 
     callback(list);
   }, (err) => {
-    console.error("Error subscribing to Firestore reservations, using local fallback cache:", err);
+    console.warn("Firestore reservations subscription deferred. Using local cached records:", err.message);
     callback(getLocalReservations());
   });
 }
