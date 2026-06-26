@@ -36,7 +36,25 @@ interface CustomerAppProps {
   setActiveTab: (tab: string) => void;
 }
 
-export default function CustomerApp({ settings, onLogEvent, activeTab, setActiveTab }: CustomerAppProps) {
+export default function CustomerApp({ settings, onLogEvent: parentLogEvent, activeTab, setActiveTab }: CustomerAppProps) {
+  // Floating Action Popups state moved to top
+  const [activeNotification, setActiveNotification] = useState<string | null>(null);
+
+  // Beautiful interactive client-side toast notifications bridge
+  const onLogEvent = (msg: string, type: 'info' | 'success' | 'warning' | 'error') => {
+    parentLogEvent(msg, type);
+    setActiveNotification(`${type === 'success' ? '🎉' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️'} ${msg}`);
+  };
+
+  useEffect(() => {
+    if (activeNotification) {
+      const timer = setTimeout(() => {
+        setActiveNotification(null);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [activeNotification]);
+
   // Navigation & Screen States
   const [currentScreen, setCurrentScreen] = useState<'home' | 'search' | 'wishlist' | 'cart' | 'reservations' | 'profile' | 'tracking' | 'history'>('home');
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
@@ -100,9 +118,6 @@ export default function CustomerApp({ settings, onLogEvent, activeTab, setActive
   const [resRequest, setResRequest] = useState('');
   const [resSuccessMsg, setResSuccessMsg] = useState(false);
   const [isSubmittingRes, setIsSubmittingRes] = useState(false);
-
-  // Floating Action Popups
-  const [activeNotification, setActiveNotification] = useState<string | null>(null);
 
   // Active categories computed
   const categories = useMemo(() => {
@@ -399,6 +414,10 @@ export default function CustomerApp({ settings, onLogEvent, activeTab, setActive
     setProfile(null);
   };
 
+  // Interactive Sandbox Payments Simulation
+  const [isUpiModalOpen, setIsUpiModalOpen] = useState(false);
+  const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
+
   // Submit Food Order
   const handlePlaceOrder = async () => {
     if (!user) {
@@ -458,9 +477,32 @@ export default function CustomerApp({ settings, onLogEvent, activeTab, setActive
       onLogEvent(`Gourmet order #${orderId.substring(4)} placed! Synced instantly with owner dashboard.`, "success");
     } catch (err) {
       console.error(err);
-      onLogEvent("Order submission failed. Retry placing order.", "error");
+      onLogEvent("Order submission failed. Check your internet connection or Firestore setup.", "error");
     } finally {
       setIsSubmittingOrder(false);
+    }
+  };
+
+  const handleInitiatePayment = () => {
+    if (!user) {
+      setAuthMode('login');
+      setIsAuthModalOpen(true);
+      onLogEvent("Please authorize your profile before ordering.", "warning");
+      return;
+    }
+    if (!checkoutName || !checkoutPhone || !checkoutAddress) {
+      onLogEvent("Please complete your delivery credentials.", "warning");
+      return;
+    }
+
+    if (paymentMethod === 'cod') {
+      handlePlaceOrder();
+    } else if (paymentMethod === 'upi') {
+      setIsUpiModalOpen(true);
+      onLogEvent("Please scan the secure UPI QR code to complete payment.", "info");
+    } else if (paymentMethod === 'razorpay') {
+      setIsRazorpayModalOpen(true);
+      onLogEvent("Opening Secure Razorpay payment gateway...", "info");
     }
   };
 
@@ -1343,7 +1385,7 @@ export default function CustomerApp({ settings, onLogEvent, activeTab, setActive
 
                 {/* PLACE ORDER FINAL TRIGGER */}
                 <button 
-                  onClick={handlePlaceOrder}
+                  onClick={handleInitiatePayment}
                   disabled={isSubmittingOrder}
                   className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-[#0A0D14] font-bold text-xs rounded-lg text-center shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
                 >
@@ -1913,6 +1955,172 @@ export default function CustomerApp({ settings, onLogEvent, activeTab, setActive
                 ) : (
                   <button onClick={() => setAuthMode('login')} className="hover:text-amber-500 text-center w-full">Already have a luxury profile? Sign In</button>
                 )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* SECURE UPI SCANNER MODAL */}
+      <AnimatePresence>
+        {isUpiModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[250] bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="w-full max-w-sm bg-[#0E1322] border border-gray-800 p-5 rounded-2xl shadow-2xl text-center space-y-4"
+            >
+              <div className="flex flex-col items-center">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 mb-2">
+                  <Sparkles className="w-5 h-5 animate-spin" style={{ animationDuration: '3s' }} />
+                </div>
+                <h3 className="text-sm font-serif font-bold text-white tracking-wide">UPI QR Payment Gateway</h3>
+                <p className="text-[10px] text-gray-400 mt-1">Scan the secure dynamic QR code to transfer funds instantly.</p>
+              </div>
+
+              {/* QR Code Placeholder Graphic */}
+              <div className="mx-auto w-44 h-44 bg-white p-3 rounded-xl border-4 border-amber-500/20 flex flex-col items-center justify-center relative overflow-hidden group">
+                <div className="w-full h-full border border-gray-200 p-1 flex flex-col justify-between">
+                  <div className="flex justify-between">
+                    <div className="w-10 h-10 bg-black rounded" />
+                    <div className="w-10 h-10 bg-black rounded" />
+                  </div>
+                  <div className="flex justify-center flex-1 items-center p-1 text-black font-mono font-black text-center text-[8px] tracking-tighter leading-none animate-pulse">
+                    <div>
+                      SUBHURESTRO<br/>
+                      PAYMENT<br/>
+                      ₹{cartTotal}
+                    </div>
+                  </div>
+                  <div className="flex justify-between">
+                    <div className="w-10 h-10 bg-black rounded" />
+                    <div className="w-2 h-2 bg-amber-500 rounded animate-ping" />
+                    <div className="w-6 h-6 bg-black rounded-sm" />
+                  </div>
+                </div>
+                
+                {/* Scanner laser effect */}
+                <div className="absolute top-0 inset-x-0 h-0.5 bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)] animate-bounce" style={{ animationDuration: '2s' }} />
+              </div>
+
+              <div className="bg-gray-900/60 border border-gray-800 rounded-lg p-2.5 space-y-1 text-center">
+                <span className="text-[9px] text-gray-400 block uppercase tracking-wider font-bold">Payee Merchant UPI ID</span>
+                <span className="text-xs font-mono font-bold text-amber-500 selection:bg-amber-500/20">{settings.upiId || "subhurestro@upi"}</span>
+                <span className="text-[9px] text-gray-500 block">Total Amount Due: ₹{cartTotal}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3.5 pt-1">
+                <button 
+                  type="button"
+                  onClick={() => setIsUpiModalOpen(false)}
+                  className="py-2 bg-gray-900 border border-gray-800 text-gray-400 text-[10px] font-bold rounded-lg transition-all active:scale-95"
+                >
+                  Cancel Order
+                </button>
+                <button 
+                  type="button"
+                  onClick={async () => {
+                    setIsUpiModalOpen(false);
+                    onLogEvent("UPI authorization successful. Submitting gourmet ticket...", "success");
+                    await handlePlaceOrder();
+                  }}
+                  className="py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-[#0A0D14] text-[10px] font-black rounded-lg transition-all active:scale-95 shadow-lg shadow-amber-500/10"
+                >
+                  I Have Paid & Confirm
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* SECURE RAZORPAY GATEWAY MODAL */}
+      <AnimatePresence>
+        {isRazorpayModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-[250] bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="w-full max-w-sm bg-white text-gray-900 rounded-2xl overflow-hidden shadow-2xl border border-gray-200"
+            >
+              {/* Razorpay Brand Header */}
+              <div className="bg-[#1C2541] p-4 text-white flex justify-between items-center">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 bg-blue-500 rounded flex items-center justify-center font-bold text-[10px]">R</div>
+                  <div className="text-left">
+                    <h4 className="text-[11px] font-black tracking-tight leading-none">Razorpay</h4>
+                    <p className="text-[7.5px] text-blue-200/80 mt-0.5 font-bold uppercase tracking-wider font-sans">Secured Sandbox checkout</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[7.5px] text-gray-400 block uppercase font-bold">Payable Total</span>
+                  <span className="text-sm font-black text-white font-sans">₹{cartTotal}</span>
+                </div>
+              </div>
+
+              {/* Merchant Details */}
+              <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex justify-between items-center text-[10px] text-left">
+                <span className="text-gray-500 font-medium font-sans">Merchant: <strong>{settings.name}</strong></span>
+                <span className="text-[8px] bg-blue-50 border border-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-black font-sans">TEST MODE</span>
+              </div>
+
+              {/* Simulation Options */}
+              <div className="p-4 space-y-4">
+                <div className="space-y-1 text-left">
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block font-sans">Simulator Authorization Control</span>
+                  <p className="text-[10px] text-gray-600 font-sans">Select simulated payment outcome for the sandbox environment:</p>
+                </div>
+
+                <div className="space-y-2">
+                  <button 
+                    type="button"
+                    onClick={async () => {
+                      setIsRazorpayModalOpen(false);
+                      onLogEvent("Razorpay authorization verified. Transmitting order blueprint...", "success");
+                      await handlePlaceOrder();
+                    }}
+                    className="w-full p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-left flex justify-between items-center group transition-all active:scale-[0.98]"
+                  >
+                    <div>
+                      <span className="text-[10.5px] font-bold text-emerald-800 block font-sans">Simulate Success (Visa/Mastercard)</span>
+                      <span className="text-[8.5px] text-emerald-600 font-sans">Instantly authorize credit line & place ticket</span>
+                    </div>
+                    <Check className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform shrink-0" />
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setIsRazorpayModalOpen(false);
+                      onLogEvent("Razorpay payment transaction canceled or failed.", "error");
+                    }}
+                    className="w-full p-3 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl text-left flex justify-between items-center group transition-all active:scale-[0.98]"
+                  >
+                    <div>
+                      <span className="text-[10.5px] font-bold text-rose-800 block font-sans">Simulate Decline / Reject</span>
+                      <span className="text-[8.5px] text-rose-600 font-sans">Decline card verification with raw 502 status</span>
+                    </div>
+                    <X className="w-4 h-4 text-rose-600 group-hover:scale-110 transition-transform shrink-0" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Secure Footer bar */}
+              <div className="bg-gray-50 px-4 py-2.5 border-t border-gray-100 flex items-center justify-between text-[8px] text-gray-400">
+                <span className="font-sans">🔒 256-bit AES Bank-Grade Encryption</span>
+                <span className="font-bold font-sans">razorpay.com</span>
               </div>
             </motion.div>
           </motion.div>
