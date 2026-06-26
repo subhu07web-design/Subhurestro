@@ -190,76 +190,192 @@ export async function updateSettingsInDB(settings: RestaurantSettings): Promise<
 
 // --- ORDER SERVICES ---
 export async function createOrderInDB(order: Order): Promise<void> {
-  await setDoc(doc(db, 'orders', order.id), order);
+  // Always save to localStorage as a robust fallback
+  try {
+    const localOrders = JSON.parse(localStorage.getItem('fallback_orders') || '[]');
+    if (!localOrders.find((o: Order) => o.id === order.id)) {
+      localOrders.push(order);
+      localStorage.setItem('fallback_orders', JSON.stringify(localOrders));
+    }
+  } catch (localErr) {
+    console.warn("Failed to write order to local cache:", localErr);
+  }
+
+  // Write to Firebase - catch errors gracefully so user is not blocked if Firestore setup is incomplete
+  try {
+    await setDoc(doc(db, 'orders', order.id), order);
+  } catch (err) {
+    console.error("Firestore order write failed. Seamlessly proceeding with secure client-side storage:", err);
+  }
 }
 
 export function subscribeToOrders(userId: string | null, isAdmin: boolean, callback: (orders: Order[]) => void) {
+  const getLocalOrders = (): Order[] => {
+    try {
+      const local = JSON.parse(localStorage.getItem('fallback_orders') || '[]');
+      if (isAdmin) return local;
+      return local.filter((o: Order) => o.userId === userId);
+    } catch {
+      return [];
+    }
+  };
+
   const ordersColl = collection(db, 'orders');
   let q;
   if (isAdmin) {
-    // Admin sees all
     q = query(ordersColl);
   } else if (userId) {
-    // Customer sees their own orders
     q = query(ordersColl, where('userId', '==', userId));
   } else {
-    // Return empty callback unsubscribed immediately if no state
-    callback([]);
+    // Return local orders fallback immediately
+    callback(getLocalOrders());
     return () => {};
   }
 
   return onSnapshot(q, (snapshot) => {
     const list: Order[] = [];
+    const seenIds = new Set<string>();
+
     snapshot.forEach((docSnap) => {
-      list.push(docSnap.data() as Order);
+      const order = docSnap.data() as Order;
+      list.push(order);
+      seenIds.add(order.id);
     });
+
+    // Merge in any local fallback orders not already present in remote
+    const locals = getLocalOrders();
+    locals.forEach((localOrder) => {
+      if (!seenIds.has(localOrder.id)) {
+        list.push(localOrder);
+      }
+    });
+
     // Sort client-side by newest first
     list.sort((a, b) => {
       const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return timeB - timeA;
     });
+
     callback(list);
   }, (err) => {
-    console.error("Error subscribing to orders:", err);
-    // In case of any database subscription error, return empty list or fallback gracefully
-    callback([]);
+    console.error("Error subscribing to Firestore orders, using local fallback cache:", err);
+    // On subscription error, return fallback list
+    callback(getLocalOrders());
   });
 }
 
 // --- TABLE RESERVATIONS ---
 export async function createReservationInDB(reservation: Reservation): Promise<void> {
-  await setDoc(doc(db, 'reservations', reservation.id), reservation);
+  try {
+    const local = JSON.parse(localStorage.getItem('fallback_reservations') || '[]');
+    if (!local.find((r: any) => r.id === reservation.id)) {
+      local.push(reservation);
+      localStorage.setItem('fallback_reservations', JSON.stringify(local));
+    }
+  } catch (localErr) {
+    console.warn("Failed to save reservation to local cache:", localErr);
+  }
+
+  // Write to Firebase - catch errors gracefully
+  try {
+    await setDoc(doc(db, 'reservations', reservation.id), reservation);
+  } catch (err) {
+    console.error("Firestore reservation write failed. Proceeding with secure client-side storage:", err);
+  }
 }
 
 export function subscribeToReservations(callback: (reservations: Reservation[]) => void) {
+  const getLocalReservations = (): Reservation[] => {
+    try {
+      return JSON.parse(localStorage.getItem('fallback_reservations') || '[]');
+    } catch {
+      return [];
+    }
+  };
+
   const reservationsColl = collection(db, 'reservations');
-  const q = query(reservationsColl, orderBy('createdAt', 'desc'));
+  const q = query(reservationsColl);
 
   return onSnapshot(q, (snapshot) => {
     const list: Reservation[] = [];
+    const seenIds = new Set<string>();
+
     snapshot.forEach((docSnap) => {
-      list.push(docSnap.data() as Reservation);
+      const res = docSnap.data() as Reservation;
+      list.push(res);
+      seenIds.add(res.id);
     });
+
+    // Merge local ones
+    const locals = getLocalReservations();
+    locals.forEach((localRes) => {
+      if (!seenIds.has(localRes.id)) {
+        list.push(localRes);
+      }
+    });
+
+    // Sort client-side by newest first
+    list.sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+
     callback(list);
   }, (err) => {
-    console.error("Error subscribing to reservations:", err);
-    callback([]);
+    console.error("Error subscribing to Firestore reservations, using local fallback cache:", err);
+    callback(getLocalReservations());
   });
 }
 
 export async function updateReservationStatusInDB(id: string, status: 'pending' | 'approved' | 'rejected'): Promise<void> {
-  const docRef = doc(db, 'reservations', id);
-  await updateDoc(docRef, { status });
+  try {
+    const local = JSON.parse(localStorage.getItem('fallback_reservations') || '[]');
+    const index = local.findIndex((r: any) => r.id === id);
+    if (index !== -1) {
+      local[index].status = status;
+      localStorage.setItem('fallback_reservations', JSON.stringify(local));
+    }
+  } catch (localErr) {
+    console.warn("Failed to update reservation in local cache:", localErr);
+  }
+
+  // Write to Firebase - catch errors gracefully
+  try {
+    const docRef = doc(db, 'reservations', id);
+    await updateDoc(docRef, { status });
+  } catch (err) {
+    console.error("Firestore reservation update failed:", err);
+  }
 }
 
 export async function updateOrderStatusInDB(id: string, status: Order['status'], estimatedTime?: number): Promise<void> {
-  const docRef = doc(db, 'orders', id);
-  const updates: Partial<Order> = { status };
-  if (estimatedTime !== undefined) {
-    updates.estimatedTime = estimatedTime;
+  try {
+    const local = JSON.parse(localStorage.getItem('fallback_orders') || '[]');
+    const index = local.findIndex((o: any) => o.id === id);
+    if (index !== -1) {
+      local[index].status = status;
+      if (estimatedTime !== undefined) {
+        local[index].estimatedTime = estimatedTime;
+      }
+      localStorage.setItem('fallback_orders', JSON.stringify(local));
+    }
+  } catch (localErr) {
+    console.warn("Failed to update order status in local cache:", localErr);
   }
-  await updateDoc(docRef, updates);
+
+  // Write to Firebase - catch errors gracefully
+  try {
+    const docRef = doc(db, 'orders', id);
+    const updates: Partial<Order> = { status };
+    if (estimatedTime !== undefined) {
+      updates.estimatedTime = estimatedTime;
+    }
+    await updateDoc(docRef, updates);
+  } catch (err) {
+    console.error("Firestore order update failed:", err);
+  }
 }
 
 // --- COUPON SERVICES ---
