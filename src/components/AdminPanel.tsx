@@ -482,14 +482,21 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
                       {/* Ticket Header */}
                       <div className="flex justify-between items-start border-b border-gray-800/60 pb-2.5">
                         <div>
-                          <span className="text-[9px] font-bold text-amber-500">#{order.id.substring(4)}</span>
-                          <h4 className="text-xs font-bold text-white mt-0.5">{order.userName}</h4>
-                          <span className="text-[8px] text-gray-500">{new Date(order.createdAt).toLocaleTimeString()} • {order.paymentMethod.toUpperCase()}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] font-bold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded">#{order.id.substring(4)}</span>
+                            <span className="text-[8px] text-gray-500 font-mono">{new Date(order.createdAt).toLocaleTimeString()}</span>
+                          </div>
+                          <h4 className="text-xs font-black text-white mt-1.5">{order.userName}</h4>
+                          <div className="flex items-center gap-1 text-gray-300 mt-1">
+                            <Phone className="w-3.5 h-3.5 text-amber-500" />
+                            <span className="text-[10px] font-mono font-bold">{order.userPhone}</span>
+                          </div>
+                          <span className="text-[8px] inline-block mt-1 text-gray-500 bg-gray-800/40 px-1 py-0.5 rounded font-bold uppercase tracking-wider">{order.paymentMethod.toUpperCase()}</span>
                         </div>
 
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="text-xs font-serif font-black text-white">₹{order.total}</span>
-                          <span className={`text-[8px] px-2 py-0.5 font-black uppercase rounded ${
+                        <div className="flex flex-col items-end gap-1.5">
+                          <span className="text-sm font-serif font-black text-amber-400">₹{order.total}</span>
+                          <span className={`text-[8.5px] px-2 py-0.5 font-black uppercase rounded ${
                             order.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/10' :
                             order.status === 'cancelled' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10' :
                             'bg-amber-500/10 text-amber-500 border border-amber-500/10'
@@ -501,19 +508,60 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
 
                       {/* Items List */}
                       <div className="py-3 space-y-1.5 border-b border-gray-800/40">
+                        <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Items & Quantity:</div>
                         {order.items.map((it, idx) => (
-                          <div key={idx} className="flex justify-between text-[10px] text-gray-300">
-                            <span>{it.name} <span className="text-gray-500">x{it.quantity}</span></span>
-                            <span>₹{it.price * it.quantity}</span>
+                          <div key={idx} className="space-y-0.5">
+                            <div className="flex justify-between text-[11px] text-gray-200">
+                              <span className="font-semibold">
+                                {it.name} <span className="text-amber-500 font-extrabold ml-1 bg-amber-500/10 px-1 py-0.2 rounded text-[10px]">x{it.quantity}</span>
+                              </span>
+                              <span className="font-mono text-gray-400">₹{it.price * it.quantity}</span>
+                            </div>
+                            {it.selectedVariant && (
+                              <p className="text-[9px] text-gray-500 ml-2">
+                                • {it.selectedVariant.variantName}: {it.selectedVariant.optionName} (+₹{it.selectedVariant.priceAdjustment})
+                              </p>
+                            )}
+                            {it.selectedAddOns && it.selectedAddOns.length > 0 && (
+                              <p className="text-[9px] text-gray-500 ml-2">
+                                • Add-ons: {it.selectedAddOns.map(a => `${a.name} (+₹${a.price})`).join(', ')}
+                              </p>
+                            )}
                           </div>
                         ))}
+                        <div className="flex justify-between items-center text-[9px] text-gray-400 pt-1 font-bold">
+                          <span>Total Quantity:</span>
+                          <span>{order.items.reduce((acc, curr) => acc + curr.quantity, 0)} Items</span>
+                        </div>
+                      </div>
+
+                      {/* Detailed Billing Breakdown */}
+                      <div className="py-2.5 border-b border-gray-800/40 text-[9.5px] space-y-1 text-gray-400">
+                        <div className="flex justify-between">
+                          <span>Subtotal:</span>
+                          <span>₹{order.items.reduce((sum, i) => sum + (i.price * i.quantity), 0)}</span>
+                        </div>
+                        {order.discount > 0 && (
+                          <div className="flex justify-between text-rose-400">
+                            <span>Discount:</span>
+                            <span>-₹{order.discount}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-gray-500">
+                          <span>Charges & Tax:</span>
+                          <span>Pack: ₹{order.packingCharge} | Del: ₹{order.deliveryCharge} | GST: ₹{order.tax}</span>
+                        </div>
+                        <div className="flex justify-between text-[11px] text-white font-bold pt-1 border-t border-gray-800/40">
+                          <span>Amount To Pay:</span>
+                          <span className="text-amber-500">₹{order.total}</span>
+                        </div>
                       </div>
 
                       {/* Address & Instructions */}
                       <div className="pt-2.5 text-[10px] space-y-1">
                         <p className="text-gray-400 flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                          <span className="break-all">Delivery: {order.address}</span>
+                          <span className="break-all font-semibold">Delivery: {order.address}</span>
                         </p>
                         {order.specialInstructions && (
                           <p className="text-amber-500 bg-amber-500/5 px-2 py-1 rounded border border-amber-500/10 italic text-[9px] break-all">

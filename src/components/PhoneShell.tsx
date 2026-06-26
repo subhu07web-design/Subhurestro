@@ -140,7 +140,7 @@ export default function PhoneShell() {
     <div className="min-h-screen bg-[#06090F] flex flex-col overflow-hidden text-gray-200">
       
       {/* GLOBAL DUAL VIEW TOP BAR CONTROLS */}
-      <nav className="h-16 md:h-14 bg-[#0A0E17] border-b border-gray-800/80 px-3 md:px-6 flex flex-col md:flex-row items-center justify-between gap-2 md:gap-4 py-2 md:py-0 z-50 shrink-0 shadow-lg">
+      <nav className="min-h-[4rem] md:h-14 bg-[#0A0E17] border-b border-gray-800/80 px-3 md:px-6 flex flex-col md:flex-row items-center justify-between gap-2 md:gap-4 py-2 md:py-0 z-50 shrink-0 shadow-lg">
         <div className="flex items-center justify-between w-full md:w-auto">
           <div className="flex items-center gap-2">
             <Flame className="w-5 h-5 text-amber-500 fill-amber-500/20" />
@@ -202,7 +202,7 @@ export default function PhoneShell() {
       <div className="flex-1 flex overflow-hidden relative">
 
         {/* SIMULATOR SCREEN CONTAINER */}
-        <div className="flex-grow flex items-center justify-center p-2 md:p-6 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0C1221] via-[#07090F] to-black overflow-y-auto">
+        <div className={`flex-grow flex items-center justify-center ${activeTab === 'admin' || isFullScreen ? 'p-0 md:p-6' : 'p-2 md:p-6'} bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0C1221] via-[#07090F] to-black overflow-y-auto`}>
           
           <AnimatePresence mode="wait">
             {activeTab === 'customer' ? (
@@ -214,7 +214,7 @@ export default function PhoneShell() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 15 }}
-                  className="w-full max-w-5xl h-[calc(100vh-100px)] min-h-[500px] md:h-[710px] bg-[#0E1322] rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] border border-gray-800/60 flex flex-col"
+                  className="w-full h-full md:max-w-5xl md:h-[calc(100vh-100px)] md:min-h-[500px] md:h-[710px] bg-[#0E1322] rounded-none md:rounded-3xl overflow-hidden shadow-none md:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] border-0 md:border md:border-gray-800/60 flex flex-col"
                 >
                   <CustomerApp 
                     settings={settings} 
@@ -310,7 +310,7 @@ export default function PhoneShell() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 15 }}
-                className="w-full max-w-5xl h-[calc(100vh-100px)] min-h-[500px] md:h-[710px] bg-[#0E1322] rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] border border-gray-800/60 flex flex-col"
+                className="w-full h-full md:max-w-5xl md:h-[calc(100vh-100px)] md:min-h-[500px] md:h-[710px] bg-[#0E1322] rounded-none md:rounded-3xl overflow-hidden shadow-none md:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] border-0 md:border md:border-gray-800/60 flex flex-col"
               >
                 <AdminPanel 
                   settings={settings} 
