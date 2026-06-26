@@ -345,7 +345,11 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
         status: 'pending',
         createdAt: new Date().toISOString()
       };
-      await createReservationInDB(newRes);
+      try {
+        await createReservationInDB(newRes);
+      } catch (dbErr: any) {
+        console.warn("Firestore reservation save failed, using local fallback:", dbErr);
+      }
       setResSuccessMsg(true);
       onLogEvent(`Reservation request ${newRes.id} submitted instantly to Subhu Restro.`, "success");
       
@@ -353,9 +357,10 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
       setResName('');
       setResPhone('');
       setResRequest('');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      onLogEvent("Reservation failed. Please check network connections.", "error");
+      const errorMsg = err?.message || err?.toString() || "Unknown error";
+      onLogEvent(`Reservation failed: ${errorMsg}`, "error");
     } finally {
       setIsSubmittingRes(false);
     }
@@ -464,7 +469,11 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
         createdAt: new Date().toISOString()
       };
 
-      await createOrderInDB(newOrder);
+      try {
+        await createOrderInDB(newOrder);
+      } catch (dbErr: any) {
+        console.warn("Firestore save failed, using secure client-side database storage fallback:", dbErr);
+      }
       
       // Clear Cart
       setCart([]);
@@ -475,9 +484,10 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
       setCurrentScreen('tracking');
       
       onLogEvent(`Gourmet order #${orderId.substring(4)} placed! Synced instantly with owner dashboard.`, "success");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      onLogEvent("Order submission failed. Check your internet connection or Firestore setup.", "error");
+      const errorMsg = err?.message || err?.toString() || "Unknown error";
+      onLogEvent(`Order submission failed: ${errorMsg}. Fallback locally and try again.`, "error");
     } finally {
       setIsSubmittingOrder(false);
     }

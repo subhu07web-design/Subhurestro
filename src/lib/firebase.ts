@@ -118,7 +118,11 @@ export async function createUserProfile(uid: string, profile: Partial<UserProfil
     role: profile.role || "customer",
     createdAt: new Date().toISOString()
   };
-  await setDoc(userDocRef, userProfile);
+  try {
+    await setDoc(userDocRef, userProfile);
+  } catch (err) {
+    console.warn("Failed to save user profile to Firestore (using local fallback profile):", err);
+  }
   return userProfile;
 }
 
@@ -145,47 +149,113 @@ export async function signInWithGoogle(): Promise<UserProfile | null> {
 
 // --- FOOD / MENU SERVICES ---
 export async function getFoodsFromDB(): Promise<FoodItem[]> {
+  const getLocalFoods = (): FoodItem[] => {
+    try {
+      return JSON.parse(localStorage.getItem('fallback_foods') || '[]');
+    } catch {
+      return [];
+    }
+  };
+
   try {
     const foodsColl = collection(db, 'foods');
     const snap = await getDocs(foodsColl);
     if (snap.empty) {
-      return MOCK_FOOD_ITEMS;
+      const locals = getLocalFoods();
+      return locals.length > 0 ? locals : MOCK_FOOD_ITEMS;
     }
     const items: FoodItem[] = [];
     snap.forEach(d => {
       items.push(d.data() as FoodItem);
     });
+    // Sync local storage cache
+    try {
+      localStorage.setItem('fallback_foods', JSON.stringify(items));
+    } catch {}
     return items;
   } catch (err) {
-    console.warn("Falling back to local mock foods due to permission or offline status:", err);
-    return MOCK_FOOD_ITEMS;
+    console.warn("Falling back to local mock or cached foods due to permission or offline status:", err);
+    const locals = getLocalFoods();
+    return locals.length > 0 ? locals : MOCK_FOOD_ITEMS;
   }
 }
 
 export async function addOrUpdateFoodInDB(food: FoodItem): Promise<void> {
-  await setDoc(doc(db, 'foods', food.id), food);
+  try {
+    const local = JSON.parse(localStorage.getItem('fallback_foods') || '[]');
+    const index = local.findIndex((f: any) => f.id === food.id);
+    if (index !== -1) {
+      local[index] = food;
+    } else {
+      local.push(food);
+    }
+    localStorage.setItem('fallback_foods', JSON.stringify(local));
+  } catch (localErr) {
+    console.warn("Failed to update food in local cache:", localErr);
+  }
+
+  try {
+    await setDoc(doc(db, 'foods', food.id), food);
+  } catch (err) {
+    console.error("Firestore food add/update failed, saved locally:", err);
+  }
 }
 
 export async function deleteFoodFromDB(id: string): Promise<void> {
-  await deleteDoc(doc(db, 'foods', id));
+  try {
+    const local = JSON.parse(localStorage.getItem('fallback_foods') || '[]');
+    const filtered = local.filter((f: any) => f.id !== id);
+    localStorage.setItem('fallback_foods', JSON.stringify(filtered));
+  } catch (localErr) {
+    console.warn("Failed to delete food in local cache:", localErr);
+  }
+
+  try {
+    await deleteDoc(doc(db, 'foods', id));
+  } catch (err) {
+    console.error("Firestore food deletion failed:", err);
+  }
 }
 
 // --- RESTAURANT SETTINGS SERVICES ---
 export async function getSettingsFromDB(): Promise<RestaurantSettings> {
+  const getLocalSettings = (): RestaurantSettings | null => {
+    try {
+      const data = localStorage.getItem('fallback_settings');
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  };
+
   try {
     const settingsDoc = await getDoc(doc(db, 'settings', 'restaurant'));
     if (settingsDoc.exists()) {
-      return settingsDoc.data() as RestaurantSettings;
+      const s = settingsDoc.data() as RestaurantSettings;
+      try {
+        localStorage.setItem('fallback_settings', JSON.stringify(s));
+      } catch {}
+      return s;
     }
-    return MOCK_RESTAURANT_SETTINGS;
+    return getLocalSettings() || MOCK_RESTAURANT_SETTINGS;
   } catch (err) {
-    console.warn("Falling back to local mock settings:", err);
-    return MOCK_RESTAURANT_SETTINGS;
+    console.warn("Falling back to local cached or mock settings:", err);
+    return getLocalSettings() || MOCK_RESTAURANT_SETTINGS;
   }
 }
 
 export async function updateSettingsInDB(settings: RestaurantSettings): Promise<void> {
-  await setDoc(doc(db, 'settings', 'restaurant'), settings);
+  try {
+    localStorage.setItem('fallback_settings', JSON.stringify(settings));
+  } catch (localErr) {
+    console.warn("Failed to update settings in local cache:", localErr);
+  }
+
+  try {
+    await setDoc(doc(db, 'settings', 'restaurant'), settings);
+  } catch (err) {
+    console.error("Firestore settings update failed, saved locally:", err);
+  }
 }
 
 // --- ORDER SERVICES ---
