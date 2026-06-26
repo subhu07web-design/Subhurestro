@@ -24,7 +24,8 @@ export const MOCK_RESTAURANT_SETTINGS: RestaurantSettings = {
   deliveryCharges: 60,
   gstPercent: 18,
   upiId: "subhurestro@upi",
-  logoUrl: "https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&q=80&w=120&h=120"
+  logoUrl: "https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&q=80&w=120&h=120",
+  adminPIN: "7809"
 };
 
 export const MOCK_COUPONS: Coupon[] = [

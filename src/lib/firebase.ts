@@ -46,8 +46,8 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase Auth
 export const auth = getAuth(app);
 
-// Initialize Firestore with Custom Database ID
-export const db = getFirestore(app, databaseId);
+// Initialize Firestore with Custom Database ID safely
+export const db = databaseId && databaseId !== "(default)" ? getFirestore(app, databaseId) : getFirestore(app);
 
 // --- SEED DATABASE ON RUN ---
 export async function seedDatabaseIfNeeded() {
@@ -197,11 +197,11 @@ export function subscribeToOrders(userId: string | null, isAdmin: boolean, callb
   const ordersColl = collection(db, 'orders');
   let q;
   if (isAdmin) {
-    // Admin sees all, sorted by newest
-    q = query(ordersColl, orderBy('createdAt', 'desc'));
+    // Admin sees all
+    q = query(ordersColl);
   } else if (userId) {
     // Customer sees their own orders
-    q = query(ordersColl, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    q = query(ordersColl, where('userId', '==', userId));
   } else {
     // Return empty callback unsubscribed immediately if no state
     callback([]);
@@ -212,6 +212,12 @@ export function subscribeToOrders(userId: string | null, isAdmin: boolean, callb
     const list: Order[] = [];
     snapshot.forEach((docSnap) => {
       list.push(docSnap.data() as Order);
+    });
+    // Sort client-side by newest first
+    list.sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
     });
     callback(list);
   }, (err) => {

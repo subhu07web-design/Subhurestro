@@ -77,6 +77,7 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
   const [settsDelFee, setSettsDelFee] = useState(settings.deliveryCharges);
   const [settsGst, setSettsGst] = useState(settings.gstPercent);
   const [settsUpi, setSettsUpi] = useState(settings.upiId);
+  const [settsPin, setSettsPin] = useState(settings.adminPIN || "7809");
 
   // Load baseline values from Firebase
   useEffect(() => {
@@ -310,7 +311,8 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
       deliveryCharges: Number(settsDelFee),
       gstPercent: Number(settsGst),
       upiId: settsUpi,
-      logoUrl: settings.logoUrl
+      logoUrl: settings.logoUrl,
+      adminPIN: settsPin
     };
 
     try {
@@ -1008,6 +1010,18 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
                     value={settsGst}
                     onChange={(e) => setSettsGst(Number(e.target.value))}
                     className="w-full p-2 bg-gray-900 border border-gray-800 rounded-lg text-xs text-white"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Secret Owner PIN</label>
+                  <input 
+                    type="text" 
+                    value={settsPin}
+                    onChange={(e) => setSettsPin(e.target.value)}
+                    maxLength={6}
+                    placeholder="7809"
+                    className="w-full p-2 bg-gray-900 border border-gray-800 rounded-lg text-xs font-bold text-amber-500 font-mono text-center focus:outline-none focus:border-amber-500"
                   />
                 </div>
               </div>

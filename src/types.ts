@@ -125,4 +125,5 @@ export interface RestaurantSettings {
   instagram?: string;
   facebook?: string;
   website?: string;
+  adminPIN?: string;
 }

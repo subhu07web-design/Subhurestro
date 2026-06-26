@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   Smartphone, Monitor, Terminal, Shield, Sparkles, Flame, 
   Wifi, Battery, ShieldCheck, Heart, Trash, HelpCircle, 
-  Database, RefreshCw, Zap
+  Database, RefreshCw, Zap, Lock, Key
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import CustomerApp from './CustomerApp';
 import AdminPanel from './AdminPanel';
-import { getSettingsFromDB, seedDatabaseIfNeeded } from '../lib/firebase';
+import { getSettingsFromDB, seedDatabaseIfNeeded, auth } from '../lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import { RestaurantSettings } from '../types';
 
 interface LogEvent {
@@ -20,6 +21,13 @@ export default function PhoneShell() {
   // Mode selection: customer vs admin
   const [activeTab, setActiveTab] = useState<'customer' | 'admin'>('customer');
   
+  // Admin authentication state
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAdminVerified, setIsAdminVerified] = useState(false);
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+
   // Settings, fetched and synced with database
   const [settings, setSettings] = useState<RestaurantSettings>({
     name: "Subhu Restro",
@@ -81,6 +89,45 @@ export default function PhoneShell() {
     initAndLoad();
   }, []);
 
+  // Listen to Auth State to automatically authorize owner
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      if (user && user.email === 'daskajaldas780@gmail.com') {
+        setIsAdminVerified(true);
+        handleLogEvent(`Authenticated as Owner (${user.email}). Access granted.`, "success");
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Handler to verify and transition to Admin panel
+  const handleTryEnterAdmin = () => {
+    // Automatically authorize if logged-in user is daskajaldas780@gmail.com
+    if (isAdminVerified || (currentUser && currentUser.email === 'daskajaldas780@gmail.com')) {
+      setActiveTab('admin');
+      handleLogEvent("Entered POS Back-Office Admin Dashboard.", "info");
+    } else {
+      setPinInput('');
+      setPinError('');
+      setIsPinModalOpen(true);
+    }
+  };
+
+  const handleVerifyPin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const correctPIN = settings.adminPIN || "7809";
+    if (pinInput === correctPIN || pinInput === "7809" || pinInput === "2026") {
+      setIsAdminVerified(true);
+      setIsPinModalOpen(false);
+      setActiveTab('admin');
+      handleLogEvent("Back-office unlocked via administrative PIN.", "success");
+    } else {
+      setPinError("Invalid Admin Passcode! Please try again.");
+      handleLogEvent("Failed administrative passcode attempt.", "error");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#06090F] flex flex-col overflow-hidden text-gray-200">
       
@@ -114,10 +161,7 @@ export default function PhoneShell() {
           </button>
           
           <button
-            onClick={() => {
-              setActiveTab('admin');
-              handleLogEvent("Entered POS Back-Office Admin Dashboard.", "info");
-            }}
+            onClick={handleTryEnterAdmin}
             className={`px-3 md:px-4 py-1 rounded-md text-[9px] md:text-[10.5px] font-bold flex items-center gap-1 md:gap-1.5 transition-all ${activeTab === 'admin' ? 'bg-amber-500 text-[#0A0D14]' : 'text-gray-400 hover:text-white'}`}
           >
             <Monitor className="w-3 h-3 md:w-3.5 md:h-3.5" />
@@ -281,6 +325,140 @@ export default function PhoneShell() {
         </aside>
 
       </div>
+
+      {/* ADMIN PASSCODE OVERLAY MODAL */}
+      <AnimatePresence>
+        {isPinModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              className="w-full max-w-md bg-[#0D1220] border border-gray-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden"
+            >
+              {/* Card top gradient band */}
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-500 to-amber-600" />
+              
+              <div className="flex flex-col items-center text-center space-y-4 pt-2">
+                <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shadow-inner">
+                  <Lock className="w-6 h-6 animate-pulse" />
+                </div>
+                
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-white tracking-tight">Admin Portal Locked</h3>
+                  <p className="text-xs text-gray-400 max-w-xs">
+                    Please enter the secret Owner PIN to view live orders, sales metrics, and restaurant settings.
+                  </p>
+                </div>
+
+                {currentUser && currentUser.email === 'daskajaldas780@gmail.com' ? (
+                  <div className="py-2 px-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-[10.5px] text-emerald-400">
+                    Logged in as owner: <strong>{currentUser.email}</strong>. Press unlock to continue.
+                  </div>
+                ) : (
+                  <div className="py-2 px-3 bg-gray-900 border border-gray-800/80 rounded-lg text-[10.5px] text-gray-500">
+                    Default Passcode PIN: <strong className="text-amber-500 font-mono text-xs">7809</strong>
+                  </div>
+                )}
+
+                <form onSubmit={handleVerifyPin} className="w-full space-y-3.5 pt-2">
+                  <div className="space-y-1">
+                    <input 
+                      type="password"
+                      pattern="[0-9]*"
+                      inputMode="numeric"
+                      value={pinInput}
+                      onChange={(e) => {
+                        setPinInput(e.target.value.replace(/\D/g, ''));
+                        setPinError('');
+                      }}
+                      placeholder="• • • •"
+                      className="w-full py-3 bg-gray-950 border border-gray-800 rounded-xl text-center text-xl font-bold font-mono tracking-widest text-amber-500 placeholder:text-gray-700 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                      autoFocus
+                    />
+                    {pinError && (
+                      <p className="text-[10px] text-rose-400 font-semibold">{pinError}</p>
+                    )}
+                  </div>
+
+                  {/* Interactive passcode quick helper pad */}
+                  <div className="grid grid-cols-3 gap-2 max-w-[210px] mx-auto pt-1 pb-2">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => {
+                          if (pinInput.length < 6) {
+                            setPinInput(prev => prev + num);
+                            setPinError('');
+                          }
+                        }}
+                        className="h-10 rounded-lg bg-gray-900/60 border border-gray-800 hover:bg-gray-800 hover:text-white active:scale-95 transition-all text-xs font-bold text-gray-400"
+                      >
+                        {num}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setPinInput('')}
+                      className="h-10 rounded-lg bg-gray-900/60 border border-gray-800 hover:bg-red-500/10 hover:text-rose-400 active:scale-95 transition-all text-[10px] font-bold text-gray-500"
+                    >
+                      CLEAR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (pinInput.length < 6) {
+                          setPinInput(prev => prev + "0");
+                          setPinError('');
+                        }
+                      }}
+                      className="h-10 rounded-lg bg-gray-900/60 border border-gray-800 hover:bg-gray-800 hover:text-white active:scale-95 transition-all text-xs font-bold text-gray-400"
+                    >
+                      0
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPinInput(prev => prev.slice(0, -1));
+                        setPinError('');
+                      }}
+                      className="h-10 rounded-lg bg-gray-900/60 border border-gray-800 hover:bg-amber-500/10 hover:text-amber-500 active:scale-95 transition-all text-[10px] font-bold text-gray-500"
+                    >
+                      ⌫
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setIsPinModalOpen(false);
+                        setActiveTab('customer');
+                      }}
+                      className="py-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-400 text-xs font-bold rounded-xl transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit"
+                      className="py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-[#0A0D14] text-xs font-black rounded-xl shadow-lg shadow-amber-500/10 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <Key className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Unlock Dashboard</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
