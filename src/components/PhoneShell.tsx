@@ -140,10 +140,10 @@ export default function PhoneShell() {
     <div className="h-screen w-full bg-[#06090F] flex flex-col overflow-hidden text-gray-200">
       
       {/* PRIMARY WORKSPACE */}
-      <div className="flex-grow flex overflow-hidden relative">
+      <div className="w-full h-full flex-grow flex overflow-hidden relative">
 
         {/* SIMULATOR SCREEN CONTAINER */}
-        <div className={`flex-grow flex items-center justify-center ${activeTab === 'admin' || isFullScreen ? 'p-0 md:p-6' : 'p-2 md:p-6'} bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0C1221] via-[#07090F] to-black overflow-y-auto`}>
+        <div className={`w-full h-full flex-grow flex items-center justify-center ${activeTab === 'admin' || isFullScreen ? 'p-0 md:p-6' : 'p-2 md:p-6'} bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0C1221] via-[#07090F] to-black overflow-y-auto`}>
           
           <AnimatePresence mode="wait">
             {activeTab === 'customer' ? (
