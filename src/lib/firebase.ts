@@ -280,6 +280,8 @@ export async function createOrderInDB(order: Order): Promise<void> {
 }
 
 export function subscribeToOrders(userId: string | null, isAdmin: boolean, callback: (orders: Order[]) => void) {
+  let unsubscribeFirestore: (() => void) | null = null;
+
   const getLocalOrders = (): Order[] => {
     try {
       const local = JSON.parse(localStorage.getItem('fallback_orders') || '[]');
@@ -290,62 +292,112 @@ export function subscribeToOrders(userId: string | null, isAdmin: boolean, callb
     }
   };
 
-  const currentUser = auth.currentUser;
-  const isFirebaseAdmin = currentUser && (
-    currentUser.email === 'daskajaldas780@gmail.com' || 
-    // also allow if we logged in as admin role (which we might have verified in profile state)
-    localStorage.getItem('isAdminSession') === 'true'
-  );
+  // We can listen to auth state changes to dynamically set up the Firestore subscription
+  const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    // If there was an active firestore sub, clear it first
+    if (unsubscribeFirestore) {
+      unsubscribeFirestore();
+      unsubscribeFirestore = null;
+    }
 
-  // If requesting admin-level orders but not authenticated as admin, return local fallback immediately
-  if (isAdmin && !isFirebaseAdmin) {
-    callback(getLocalOrders());
-    return () => {};
-  }
+    const isFirebaseAdmin = user && (
+      user.email === 'daskajaldas780@gmail.com' || 
+      localStorage.getItem('isAdminSession') === 'true'
+    );
 
-  const ordersColl = collection(db, 'orders');
-  let q;
-  if (isAdmin) {
-    q = query(ordersColl);
-  } else if (userId) {
-    q = query(ordersColl, where('userId', '==', userId));
-  } else {
-    // Return local orders fallback immediately
-    callback(getLocalOrders());
-    return () => {};
-  }
-
-  return onSnapshot(q, (snapshot) => {
-    const list: Order[] = [];
-    const seenIds = new Set<string>();
-
-    snapshot.forEach((docSnap) => {
-      const order = docSnap.data() as Order;
-      list.push(order);
-      seenIds.add(order.id);
-    });
-
-    // Merge in any local fallback orders not already present in remote
-    const locals = getLocalOrders();
-    locals.forEach((localOrder) => {
-      if (!seenIds.has(localOrder.id)) {
-        list.push(localOrder);
+    // If we want admin-level orders, we MUST be the admin (either by email or admin session)
+    if (isAdmin) {
+      if (!isFirebaseAdmin) {
+        // Fallback to local cached orders
+        callback(getLocalOrders());
+        return;
       }
-    });
 
-    // Sort client-side by newest first
-    list.sort((a, b) => {
-      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return timeB - timeA;
-    });
+      // We are verified admin, subscribe to all orders in Firestore
+      const ordersColl = collection(db, 'orders');
+      const q = query(ordersColl);
 
-    callback(list);
-  }, (err) => {
-    console.warn("Firestore orders subscription deferred. Using local cached records:", err.message);
-    // On subscription error, return fallback list
-    callback(getLocalOrders());
+      unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+        const list: Order[] = [];
+        const seenIds = new Set<string>();
+
+        snapshot.forEach((docSnap) => {
+          const order = docSnap.data() as Order;
+          list.push(order);
+          seenIds.add(order.id);
+        });
+
+        // Merge in local fallback orders
+        const locals = getLocalOrders();
+        locals.forEach((localOrder) => {
+          if (!seenIds.has(localOrder.id)) {
+            list.push(localOrder);
+          }
+        });
+
+        // Sort by newest first
+        list.sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return timeB - timeA;
+        });
+
+        callback(list);
+      }, (err) => {
+        console.warn("Firestore admin orders subscription error:", err.message);
+        callback(getLocalOrders());
+      });
+
+    } else {
+      // Customer view
+      // If we have a logged-in user, subscribe to their orders in Firestore
+      const targetUserId = user ? user.uid : userId;
+      if (targetUserId) {
+        const ordersColl = collection(db, 'orders');
+        const q = query(ordersColl, where('userId', '==', targetUserId));
+
+        unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+          const list: Order[] = [];
+          const seenIds = new Set<string>();
+
+          snapshot.forEach((docSnap) => {
+            const order = docSnap.data() as Order;
+            list.push(order);
+            seenIds.add(order.id);
+          });
+
+          const locals = getLocalOrders();
+          locals.forEach((localOrder) => {
+            if (!seenIds.has(localOrder.id)) {
+              list.push(localOrder);
+            }
+          });
+
+          list.sort((a, b) => {
+            const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return timeB - timeA;
+          });
+
+          callback(list);
+        }, (err) => {
+          console.warn("Firestore customer orders subscription error:", err.message);
+          callback(getLocalOrders());
+        });
+      } else {
+        // Guest user, return local fallback
+        callback(getLocalOrders());
+      }
+    }
   });
+
+  // Return a cleanup function that cancels both the Auth listener and the active Firestore subscription
+  return () => {
+    unsubscribeAuth();
+    if (unsubscribeFirestore) {
+      unsubscribeFirestore();
+    }
+  };
 }
 
 // --- TABLE RESERVATIONS ---
@@ -369,6 +421,8 @@ export async function createReservationInDB(reservation: Reservation): Promise<v
 }
 
 export function subscribeToReservations(callback: (reservations: Reservation[]) => void) {
+  let unsubscribeFirestore: (() => void) | null = null;
+
   const getLocalReservations = (): Reservation[] => {
     try {
       return JSON.parse(localStorage.getItem('fallback_reservations') || '[]');
@@ -377,51 +431,62 @@ export function subscribeToReservations(callback: (reservations: Reservation[]) 
     }
   };
 
-  const currentUser = auth.currentUser;
-  const isFirebaseAdmin = currentUser && (
-    currentUser.email === 'daskajaldas780@gmail.com' ||
-    localStorage.getItem('isAdminSession') === 'true'
-  );
+  const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    if (unsubscribeFirestore) {
+      unsubscribeFirestore();
+      unsubscribeFirestore = null;
+    }
 
-  // If not authenticated as admin in Firebase, use local cached reservations to avoid permission errors
-  if (!isFirebaseAdmin) {
-    callback(getLocalReservations());
-    return () => {};
-  }
+    const isFirebaseAdmin = (user && user.email === 'daskajaldas780@gmail.com') ||
+                            localStorage.getItem('isAdminSession') === 'true';
 
-  const reservationsColl = collection(db, 'reservations');
-  const q = query(reservationsColl);
+    // If not authenticated as admin in Firebase, use local cached reservations to avoid permission errors
+    if (!isFirebaseAdmin) {
+      callback(getLocalReservations());
+      return;
+    }
 
-  return onSnapshot(q, (snapshot) => {
-    const list: Reservation[] = [];
-    const seenIds = new Set<string>();
+    const reservationsColl = collection(db, 'reservations');
+    const q = query(reservationsColl);
 
-    snapshot.forEach((docSnap) => {
-      const res = docSnap.data() as Reservation;
-      list.push(res);
-      seenIds.add(res.id);
+    unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+      const list: Reservation[] = [];
+      const seenIds = new Set<string>();
+
+      snapshot.forEach((docSnap) => {
+        const res = docSnap.data() as Reservation;
+        list.push(res);
+        seenIds.add(res.id);
+      });
+
+      // Merge local ones
+      const locals = getLocalReservations();
+      locals.forEach((localRes) => {
+        if (!seenIds.has(localRes.id)) {
+          list.push(localRes);
+        }
+      });
+
+      // Sort client-side by newest first
+      list.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+
+      callback(list);
+    }, (err) => {
+      console.warn("Firestore reservations subscription deferred. Using local cached records:", err.message);
+      callback(getLocalReservations());
     });
-
-    // Merge local ones
-    const locals = getLocalReservations();
-    locals.forEach((localRes) => {
-      if (!seenIds.has(localRes.id)) {
-        list.push(localRes);
-      }
-    });
-
-    // Sort client-side by newest first
-    list.sort((a, b) => {
-      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return timeB - timeA;
-    });
-
-    callback(list);
-  }, (err) => {
-    console.warn("Firestore reservations subscription deferred. Using local cached records:", err.message);
-    callback(getLocalReservations());
   });
+
+  return () => {
+    unsubscribeAuth();
+    if (unsubscribeFirestore) {
+      unsubscribeFirestore();
+    }
+  };
 }
 
 export async function updateReservationStatusInDB(id: string, status: 'pending' | 'approved' | 'rejected'): Promise<void> {
