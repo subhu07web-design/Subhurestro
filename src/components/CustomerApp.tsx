@@ -3,7 +3,7 @@ import {
   Search, Heart, ShoppingBag, MapPin, Calendar, Compass, 
   ChevronRight, ArrowLeft, Plus, Minus, Star, Clock, Sparkles, 
   Check, X, Award, Eye, Phone, MessageSquare, ShieldAlert,
-  User, Gift, LogOut, Ticket, CreditCard, ChevronDown, Download, RefreshCw
+  User, Gift, LogOut, Ticket, CreditCard, ChevronDown, Download, RefreshCw, Monitor
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -162,7 +162,7 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
         } else {
           // Create a fallback profile
           const newP = await createUserProfile(firebaseUser.uid, {
-            name: firebaseUser.displayName || "Gourmet Patron",
+            name: firebaseUser.displayName || "Guest User",
             email: firebaseUser.email || "",
             role: "customer"
           });
@@ -172,7 +172,7 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
         }
       } else {
         setProfile(null);
-        onLogEvent("User logged out. Switched to elegant Guest mode.", "info");
+        onLogEvent("Logged out successfully.", "info");
       }
     });
 
@@ -373,12 +373,25 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
     setAuthLoading(true);
     try {
       if (authMode === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
+        if (email.trim() === 'daskajaldas780@gmail.com' && password === '7809') {
+          localStorage.setItem('isAdminSession', 'true');
+          try {
+            await signInWithEmailAndPassword(auth, email.trim(), password);
+          } catch (fbErr: any) {
+            console.warn("Using local override for owner admin login:", fbErr.message);
+          }
+          setIsAuthModalOpen(false);
+          setActiveTab('admin');
+          onLogEvent("Welcome back, Owner! Switched to POS Admin Dashboard.", "success");
+          return;
+        }
+
+        await signInWithEmailAndPassword(auth, email.trim(), password);
         setIsAuthModalOpen(false);
       } else if (authMode === 'signup') {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await createUserProfile(cred.user.uid, {
-          name: fullName || "Noble Guest",
+          name: fullName || "Guest User",
           email: email,
           phone: phone,
           address: address,
@@ -387,12 +400,12 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
         setIsAuthModalOpen(false);
       } else {
         // Mock forgot password
-        onLogEvent("Recovery transmission sent to " + email, "info");
+        onLogEvent("Password reset email sent to " + email, "info");
         setAuthMode('login');
       }
     } catch (err: any) {
       console.error(err);
-      setAuthError(err.message || "Authentication error encountered.");
+      setAuthError(err.message || "Error logging in. Please try again.");
     } finally {
       setAuthLoading(false);
     }
@@ -557,6 +570,20 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
         </div>
 
         <div className="flex items-center gap-2.5">
+          {/* Owner Admin Quick Access */}
+          {(user?.email === 'daskajaldas780@gmail.com' || localStorage.getItem('isAdminSession') === 'true') && (
+            <button 
+              onClick={() => {
+                setActiveTab('admin');
+                onLogEvent("Switched to POS Admin Panel.", "info");
+              }}
+              className="px-2.5 py-1 text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all rounded-md flex items-center gap-1 cursor-pointer"
+            >
+              <Monitor className="w-3 h-3 text-amber-500" />
+              <span>Admin Panel</span>
+            </button>
+          )}
+
           <button 
             onClick={() => toggleWishlist("test")} 
             className="relative p-1.5 text-gray-400 hover:text-amber-500 transition-colors"
@@ -600,7 +627,7 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
         {loadingFoods && (
           <div className="py-20 flex flex-col items-center justify-center space-y-3">
             <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
-            <p className="text-xs text-gray-400">Loading fine dining catalog...</p>
+            <p className="text-xs text-gray-400">Loading menu...</p>
           </div>
         )}
 
@@ -1964,9 +1991,9 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
             >
               <div className="text-center">
                 <h3 className="text-sm font-serif font-bold text-white tracking-wide">
-                  {authMode === 'login' ? 'Patron Authorization' : authMode === 'signup' ? 'Create Luxury Profile' : 'Recover Credential'}
+                  {authMode === 'login' ? 'Sign In' : authMode === 'signup' ? 'Create Account' : 'Reset Password'}
                 </h3>
-                <p className="text-[10px] text-gray-400 mt-1">Unlock seamless order synchronization, reservations & historic logs.</p>
+                <p className="text-[10px] text-gray-400 mt-1">Access your orders, reservation history, and updates.</p>
               </div>
 
               {authError && (
@@ -1985,27 +2012,27 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
                       required
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="e.g. Alexander Mercer"
+                      placeholder="e.g. John Doe"
                       className="w-full p-2.5 bg-gray-900 border border-gray-800 rounded-lg text-xs text-white focus:outline-none focus:border-amber-500/30"
                     />
                   </div>
                 )}
 
                 <div className="space-y-1">
-                  <label className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Email Coordinates</label>
+                  <label className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Email Address</label>
                   <input 
                     type="email" 
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. patron@subhurestro.com"
+                    placeholder="e.g. user@example.com"
                     className="w-full p-2.5 bg-gray-900 border border-gray-800 rounded-lg text-xs text-white focus:outline-none focus:border-amber-500/30"
                   />
                 </div>
 
                 {authMode !== 'forgot' && (
                   <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Passphrase</label>
+                    <label className="text-[8px] font-bold text-gray-400 uppercase tracking-wider">Password</label>
                     <input 
                       type="password" 
                       required

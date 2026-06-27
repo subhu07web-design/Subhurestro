@@ -53,7 +53,7 @@ export default function PhoneShell() {
   ]);
 
   // View state controls
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(true);
 
   // Phone state controls
   const [isPhoneAsleep, setIsPhoneAsleep] = useState(false);
@@ -139,67 +139,8 @@ export default function PhoneShell() {
   return (
     <div className="min-h-screen bg-[#06090F] flex flex-col overflow-hidden text-gray-200">
       
-      {/* GLOBAL DUAL VIEW TOP BAR CONTROLS */}
-      <nav className="min-h-[4rem] md:h-14 bg-[#0A0E17] border-b border-gray-800/80 px-3 md:px-6 flex flex-col md:flex-row items-center justify-between gap-2 md:gap-4 py-2 md:py-0 z-50 shrink-0 shadow-lg">
-        <div className="flex items-center justify-between w-full md:w-auto">
-          <div className="flex items-center gap-2">
-            <Flame className="w-5 h-5 text-amber-500 fill-amber-500/20" />
-            <span className="font-serif font-black text-white text-xs md:text-sm tracking-widest uppercase">Subhu Restro • POS Portal</span>
-            <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/15 text-[8px] font-bold uppercase ml-2 animate-pulse items-center gap-1">
-              <Database className="w-2.5 h-2.5" /> Live Sync
-            </span>
-          </div>
-          <div className="md:hidden text-[9px] text-gray-500 font-mono flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>FSSAI Certified</span>
-          </div>
-        </div>
-
-        {/* Dynamic Mode Switcher */}
-        <div className="flex bg-[#12192A] rounded-lg p-0.5 md:p-1 border border-gray-800 max-w-full items-center gap-1">
-          <button
-            onClick={() => {
-              setActiveTab('customer');
-              handleLogEvent("Opened Customer Mobile Simulator app.", "info");
-            }}
-            className={`px-3 md:px-4 py-1 rounded-md text-[9px] md:text-[10.5px] font-bold flex items-center gap-1 md:gap-1.5 transition-all ${activeTab === 'customer' ? 'bg-amber-500 text-[#0A0D14]' : 'text-gray-400 hover:text-white'}`}
-          >
-            <Smartphone className="w-3 h-3 md:w-3.5 md:h-3.5" />
-            <span>📱 Customer App</span>
-          </button>
-          
-          {activeTab === 'customer' && (
-            <button
-              onClick={() => {
-                const nextState = !isFullScreen;
-                setIsFullScreen(nextState);
-                handleLogEvent(nextState ? "Switched Customer App to Full Screen Desktop Web View." : "Switched Customer App to Mobile Simulator View.", "info");
-              }}
-              className="px-2 md:px-3 py-1 rounded-md text-[8.5px] md:text-[9.5px] font-extrabold bg-[#1A253A] border border-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-[#0A0D14] transition-all flex items-center gap-1 cursor-pointer"
-              title={isFullScreen ? "Switch to Phone Shell" : "Switch to Full Screen Layout"}
-            >
-              {isFullScreen ? <Smartphone className="w-2.5 h-2.5" /> : <Monitor className="w-2.5 h-2.5" />}
-              <span>{isFullScreen ? "Phone Shell" : "Full Screen"}</span>
-            </button>
-          )}
-          
-          <button
-            onClick={handleTryEnterAdmin}
-            className={`px-3 md:px-4 py-1 rounded-md text-[9px] md:text-[10.5px] font-bold flex items-center gap-1 md:gap-1.5 transition-all ${activeTab === 'admin' ? 'bg-amber-500 text-[#0A0D14]' : 'text-gray-400 hover:text-white'}`}
-          >
-            <Monitor className="w-3 h-3 md:w-3.5 md:h-3.5" />
-            <span>💻 Owner POS</span>
-          </button>
-        </div>
-
-        <div className="hidden md:flex text-[10px] text-gray-500 font-mono items-center gap-1.5">
-          <ShieldCheck className="w-4 h-4 text-emerald-500" />
-          <span>FSSAI Certified: #10020033004455</span>
-        </div>
-      </nav>
-
       {/* PRIMARY WORKSPACE */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-grow flex overflow-hidden relative">
 
         {/* SIMULATOR SCREEN CONTAINER */}
         <div className={`flex-grow flex items-center justify-center ${activeTab === 'admin' || isFullScreen ? 'p-0 md:p-6' : 'p-2 md:p-6'} bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0C1221] via-[#07090F] to-black overflow-y-auto`}>
@@ -316,6 +257,7 @@ export default function PhoneShell() {
                   settings={settings} 
                   onSettingsUpdated={(newS) => setSettings(newS)} 
                   onLogEvent={handleLogEvent}
+                  onSwitchToCustomer={() => setActiveTab('customer')}
                 />
               </motion.div>
             )}

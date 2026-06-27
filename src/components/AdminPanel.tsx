@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   TrendingUp, ShoppingBag, Calendar, Users, DollarSign, 
-  Settings, Award, Plus, Trash2, Edit2, Check, X, Phone, 
+  Settings, Award, Plus, Trash2, Edit2, Check, X, Phone, Smartphone,
   MessageSquare, RefreshCw, Layers, Bell, CheckCircle, Gift,
   Eye, FileText, ToggleLeft, ToggleRight, Percent, Clock
 } from 'lucide-react';
@@ -27,9 +27,10 @@ interface AdminPanelProps {
   settings: RestaurantSettings;
   onSettingsUpdated: (newSettings: RestaurantSettings) => void;
   onLogEvent: (msg: string, type: 'info' | 'success' | 'warning' | 'error') => void;
+  onSwitchToCustomer?: () => void;
 }
 
-export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: AdminPanelProps) {
+export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent, onSwitchToCustomer }: AdminPanelProps) {
   // Panel Screen Selection
   const [activeTab, setActiveTab] = useState<'orders' | 'reservations' | 'menu' | 'offers' | 'customers' | 'settings'>('orders');
 
@@ -426,10 +427,21 @@ export default function AdminPanel({ settings, onSettingsUpdated, onLogEvent }: 
           </nav>
         </div>
 
-        <div className="hidden md:block p-3 border-t border-gray-800 bg-black/10 text-center">
-          <p className="text-[9px] text-gray-600 font-bold uppercase tracking-wider">Secure Cloud POS</p>
-          <p className="text-[8px] text-emerald-500 mt-0.5">● Connected Live</p>
-        </div>
+        {onSwitchToCustomer && (
+          <div className="p-3 border-t border-gray-800 flex flex-col gap-2">
+            <button
+              onClick={onSwitchToCustomer}
+              className="w-full py-2 px-3 rounded-xl text-[10.5px] font-bold bg-[#12192A] border border-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-black hover:border-transparent transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-black/30"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>📱 Customer App</span>
+            </button>
+            <div className="hidden md:block text-center mt-0.5">
+              <p className="text-[9px] text-gray-600 font-bold uppercase tracking-wider">Secure POS</p>
+              <p className="text-[8px] text-emerald-500 mt-0.5">● Connected Live</p>
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* ADMIN CENTER PRIMARY SPACE */}
