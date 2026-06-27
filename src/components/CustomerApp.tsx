@@ -739,55 +739,118 @@ export default function CustomerApp({ settings, onLogEvent: parentLogEvent, acti
                 <span className="text-[9px] text-gray-500">Curated Daily</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                {foods.filter(f => f.isBestseller).slice(0, 4).map(food => (
-                  <div 
-                    key={food.id}
-                    className="rounded-xl overflow-hidden bg-[#0E1322] border border-gray-800/40 hover:border-amber-500/20 transition-all flex flex-col relative group"
-                  >
-                    <div className="h-24 w-full relative overflow-hidden">
-                      <img 
-                        src={food.imageUrl} 
-                        alt={food.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute top-1.5 left-1.5 flex gap-1 items-center">
-                        <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center p-0.5 ${food.isVeg ? 'border-emerald-600 bg-emerald-950/80' : 'border-rose-600 bg-rose-950/80'}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${food.isVeg ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                        </span>
-                        <span className="text-[8px] px-1.5 py-0.5 rounded bg-black/70 border border-amber-500/20 text-amber-400 font-bold flex items-center gap-0.5">
-                          <Star className="w-2 h-2 fill-amber-400" />
-                          {food.rating}
-                        </span>
-                      </div>
-                      
-                      <button 
-                        onClick={() => toggleWishlist(food.id)}
-                        className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-gray-300 hover:text-rose-500 transition-colors"
-                      >
-                        <Heart className={`w-3.5 h-3.5 ${wishlist.includes(food.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
-                      </button>
-                    </div>
-
-                    <div className="p-2.5 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h5 className="text-[11px] font-bold text-gray-100 line-clamp-1">{food.name}</h5>
-                        <p className="text-[9px] text-gray-400 mt-0.5 line-clamp-2 leading-tight">{food.description}</p>
-                      </div>
-
-                      <div className="mt-2.5 pt-2 border-t border-gray-800/50 flex items-center justify-between">
-                        <div>
-                          <span className="text-xs font-bold text-white">₹{food.discountPrice || food.price}</span>
-                          {food.discountPrice && (
-                            <span className="text-[8px] text-gray-500 line-through ml-1">₹{food.price}</span>
-                          )}
+              <div className="grid grid-cols-2 gap-3" id="home-bestsellers-grid">
+                {(() => {
+                  const bestsellers = foods.filter(f => f.isBestseller);
+                  const displayFoods = bestsellers.length > 0 ? bestsellers : foods;
+                  return displayFoods.slice(0, 4).map(food => (
+                    <div 
+                      key={food.id}
+                      id={`bestseller-card-${food.id}`}
+                      className="rounded-xl overflow-hidden bg-[#0E1322] border border-gray-800/40 hover:border-amber-500/20 transition-all flex flex-col relative group"
+                    >
+                      <div className="h-24 w-full relative overflow-hidden">
+                        <img 
+                          src={food.imageUrl} 
+                          alt={food.name} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute top-1.5 left-1.5 flex gap-1 items-center">
+                          <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center p-0.5 ${food.isVeg ? 'border-emerald-600 bg-emerald-950/80' : 'border-rose-600 bg-rose-950/80'}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${food.isVeg ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                          </span>
+                          <span className="text-[8px] px-1.5 py-0.5 rounded bg-black/70 border border-amber-500/20 text-amber-400 font-bold flex items-center gap-0.5">
+                            <Star className="w-2 h-2 fill-amber-400" />
+                            {food.rating}
+                          </span>
                         </div>
+                        
                         <button 
-                          onClick={() => handleOpenDetail(food)}
-                          className="p-1 rounded bg-amber-500 text-[#0A0D14] hover:bg-amber-400 transition-colors"
+                          onClick={() => toggleWishlist(food.id)}
+                          className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-gray-300 hover:text-rose-500 transition-colors"
                         >
-                          <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                          <Heart className={`w-3.5 h-3.5 ${wishlist.includes(food.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
                         </button>
+                      </div>
+
+                      <div className="p-2.5 flex-1 flex flex-col justify-between">
+                        <div>
+                          <h5 className="text-[11px] font-bold text-gray-100 line-clamp-1">{food.name}</h5>
+                          <p className="text-[9px] text-gray-400 mt-0.5 line-clamp-2 leading-tight">{food.description}</p>
+                        </div>
+
+                        <div className="mt-2.5 pt-2 border-t border-gray-800/50 flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-bold text-white">₹{food.discountPrice || food.price}</span>
+                            {food.discountPrice && (
+                              <span className="text-[8px] text-gray-500 line-through ml-1">₹{food.price}</span>
+                            )}
+                          </div>
+                          <button 
+                            onClick={() => handleOpenDetail(food)}
+                            className="p-1 rounded bg-amber-500 text-[#0A0D14] hover:bg-amber-400 transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+
+            {/* POPULAR DISHES LIST ON HOME PAGE */}
+            <div className="space-y-3 pt-1" id="home-popular-menu-section">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <h4 className="text-xs font-serif font-bold text-white tracking-wide">Popular Indian & International Dishes</h4>
+                </div>
+                <button 
+                  onClick={() => {
+                    setSelectedCategory('All');
+                    setCurrentScreen('search');
+                  }} 
+                  className="text-[10px] text-amber-500 font-semibold hover:underline"
+                >
+                  View All
+                </button>
+              </div>
+
+              <div className="space-y-2.5">
+                {foods.slice(0, 8).map(food => (
+                  <div 
+                    key={`home-list-${food.id}`}
+                    id={`home-list-card-${food.id}`}
+                    onClick={() => handleOpenDetail(food)}
+                    className="p-2.5 rounded-xl bg-[#0E1322] border border-gray-800/40 hover:border-amber-500/15 flex gap-3 transition-all cursor-pointer"
+                  >
+                    <img 
+                      src={food.imageUrl} 
+                      alt={food.name} 
+                      className="w-16 h-16 rounded-lg object-cover shrink-0"
+                    />
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-[11px] font-bold text-gray-100 flex items-center gap-1.5">
+                            <span className={`w-2.5 h-2.5 rounded-sm border flex items-center justify-center p-0.5 shrink-0 ${food.isVeg ? 'border-emerald-600' : 'border-rose-600'}`}>
+                              <span className={`w-1 h-1 rounded-full ${food.isVeg ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                            </span>
+                            {food.name}
+                          </h5>
+                          <span className="text-[9px] text-amber-500 font-bold flex items-center gap-0.5">
+                            <Star className="w-2.5 h-2.5 fill-amber-500" /> {food.rating}
+                          </span>
+                        </div>
+                        <p className="text-[9px] text-gray-400 line-clamp-1 mt-0.5">{food.description}</p>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs font-bold text-white">₹{food.discountPrice || food.price}</span>
+                        <span className="text-[9px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md hover:bg-amber-500/20">
+                          Order Now
+                        </span>
                       </div>
                     </div>
                   </div>

@@ -137,7 +137,7 @@ export default function PhoneShell() {
   };
 
   return (
-    <div className="min-h-screen bg-[#06090F] flex flex-col overflow-hidden text-gray-200">
+    <div className="h-screen w-full bg-[#06090F] flex flex-col overflow-hidden text-gray-200">
       
       {/* PRIMARY WORKSPACE */}
       <div className="flex-grow flex overflow-hidden relative">
